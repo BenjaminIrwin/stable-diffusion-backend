@@ -548,4 +548,5 @@ class Api:
 
     def launch(self, server_name, port):
         self.app.include_router(self.router)
+        print('Launching server on {server_name}:{port}'.format(server_name = server_name, port = port))
         uvicorn.run(self.app, host=server_name, port=port)
