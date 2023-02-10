@@ -146,10 +146,7 @@ class Api:
         self.add_api_route("/sdapi/v1/memory", self.get_memory, methods=["GET"], response_model=MemoryResponse)
 
     def add_api_route(self, path: str, endpoint, **kwargs):
-        if shared.cmd_opts.api_auth:
-            return self.app.add_api_route(path, endpoint, dependencies=[Depends(self.auth)], **kwargs)
-        return self.app.add_api_route(path, endpoint, **kwargs)
-
+        return self.app.add_api_route(path, endpoint, dependencies=[Depends(self.auth)], **kwargs)
 
     def auth(self, api_key: APIKey = Depends(APIKeyHeader(name="access_token", auto_error=False))):
         print("api_key", api_key)
