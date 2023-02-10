@@ -149,9 +149,9 @@ class Api:
     def add_api_route(self, path: str, endpoint, **kwargs):
         return self.app.add_api_route(path, endpoint, dependencies=[Depends(self.auth)], **kwargs)
 
-    def auth(self, api_key: APIKey = Depends(APIKeyHeader(name="access_token", auto_error=False))):
+    def auth(self, api_key: APIKey = Depends(APIKeyHeader(name="api_key", auto_error=False))):
         print("api_key", api_key)
-        raise HTTPException(status_code=401, detail="Incorrect username or password", headers={"WWW-Authenticate": "Basic"})
+        raise HTTPException(status_code=401, detail="Incorrect api_key")
 
     def get_script(self, script_name, script_runner):
         if script_name is None:
