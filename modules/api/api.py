@@ -174,7 +174,8 @@ class Api:
             print("api_key", api_key)
             # Query firebase realtime database with api_key
             res = self.users_db.order_by_child('api_key').equal_to(api_key).get()
-            print("res", res)
+            if res:
+                return True
         raise HTTPException(status_code=401, detail="Incorrect api_key")
 
     def get_script(self, script_name, script_runner):
