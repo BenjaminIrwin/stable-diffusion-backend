@@ -11,6 +11,11 @@ from fastapi.security import HTTPBasic, HTTPBasicCredentials
 from fastapi.security.api_key import APIKeyHeader, APIKey
 from secrets import compare_digest
 
+import firebase_admin
+from firebase_admin import credentials
+from firebase_admin import db
+from constants import *
+
 import modules.shared as shared
 from modules import sd_samplers, deepbooru, sd_hijack, images, scripts, ui, postprocessing
 from modules.api.models import *
@@ -146,11 +151,31 @@ class Api:
         self.add_api_route("/sdapi/v1/train/hypernetwork", self.train_hypernetwork, methods=["POST"], response_model=TrainResponse)
         self.add_api_route("/sdapi/v1/memory", self.get_memory, methods=["GET"], response_model=MemoryResponse)
 
+        # Fetch the service account key JSON file contents
+        cred = credentials.Certificate(fs_sa_key)
+
+        # Initialize the app with a custom auth variable, limiting the server's access
+        firebase_admin.initialize_app(cred, {
+            'databaseURL': fs_url,
+            'databaseAuthVariableOverride': {
+                'uid': fs_uid
+            }
+        })
+
+        # The app only has access as defined in the Security Rules
+        self.users_db = db.reference('/users')
+
+        # print all users
+        print(self.users_db.get())
+
     def add_api_route(self, path: str, endpoint, **kwargs):
         return self.app.add_api_route(path, endpoint, dependencies=[Depends(self.auth)], **kwargs)
 
     def auth(self, api_key: APIKey = Depends(APIKeyHeader(name="api_key", auto_error=False))):
         print("api_key", api_key)
+        # Query firebase realtime database with api_key
+        res = self.users_db.child('users').order_by_child('api_key').equal_to(api_key).get()
+        print("res", res)
         raise HTTPException(status_code=401, detail="Incorrect api_key")
 
     def get_script(self, script_name, script_runner):
