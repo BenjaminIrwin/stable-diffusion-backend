@@ -8,6 +8,7 @@ from io import BytesIO
 from gradio.processing_utils import decode_base64_to_file
 from fastapi import APIRouter, Depends, FastAPI, HTTPException, Request, Response
 from fastapi.security import HTTPBasic, HTTPBasicCredentials
+from fastapi.security.api_key import APIKeyHeader
 from secrets import compare_digest
 
 import modules.shared as shared
