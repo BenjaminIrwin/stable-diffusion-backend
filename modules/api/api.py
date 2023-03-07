@@ -7,13 +7,10 @@ from threading import Lock
 from io import BytesIO
 from gradio.processing_utils import decode_base64_to_file
 from fastapi import APIRouter, Depends, FastAPI, HTTPException, Request, Response
-from fastapi.security import HTTPBasic, HTTPBasicCredentials
 from fastapi.security.api_key import APIKeyHeader, APIKey
-from secrets import compare_digest
 
 import firebase_admin
-from firebase_admin import credentials
-from firebase_admin import db
+from firebase_admin import credentials, firestore
 from constants import *
 
 import modules.shared as shared
@@ -153,17 +150,12 @@ class Api:
 
         # Fetch the service account key JSON file contents
         cred = credentials.Certificate(fs_sa_key)
+        app = firebase_admin.initialize_app(cred)
+        db = firestore.client()
 
-        # Initialize the app with a custom auth variable, limiting the server's access
-        firebase_admin.initialize_app(cred, {
-            'databaseURL': fs_url,
-            'databaseAuthVariableOverride': {
-                'uid': fs_uid
-            }
-        })
+        self.users_db = db.collection('customers')
 
-        # The app only has access as defined in the Security Rules
-        self.users_db = db.reference('/users')
+
 
 
     def add_api_route(self, path: str, endpoint, **kwargs):
@@ -172,10 +164,8 @@ class Api:
     def auth(self, api_key: APIKey = Depends(APIKeyHeader(name="api_key", auto_error=False))):
         if api_key:
             print("api_key", api_key)
-            # Query firebase realtime database with api_key
-            res = self.users_db.order_by_child('api_key').equal_to(api_key).get()
-            if res:
-                return True
+            # Query firebase firestore database with api_key
+            res = self.users_db.where('api_key', '==', api_key).get()
         raise HTTPException(status_code=401, detail="Incorrect api_key")
 
     def get_script(self, script_name, script_runner):
