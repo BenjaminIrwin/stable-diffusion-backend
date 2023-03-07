@@ -166,6 +166,8 @@ class Api:
             print("api_key", api_key)
             # Query firebase firestore database with api_key
             res = self.users_db.where('api_key', '==', api_key).get()
+            if len(res) > 0:
+                return True
         raise HTTPException(status_code=401, detail="Incorrect api_key")
 
     def get_script(self, script_name, script_runner):
