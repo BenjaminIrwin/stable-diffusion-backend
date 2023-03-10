@@ -164,6 +164,8 @@ class Api:
         return self.app.add_api_route(path, endpoint, dependencies=[Depends(self.auth)], **kwargs)
 
     def auth(self, api_key: APIKey = Depends(APIKeyHeader(name="api_key", auto_error=False))):
+        print('API KEY:')
+        print(api_key)
         if api_key:
             # Query firebase firestore database with api_key
             res = self.users_db.where('api_key', '==', api_key).get()
@@ -223,6 +225,9 @@ class Api:
         # Set prompt to random from prompts
         img2imgreq.prompt = random.choice(prompts)
         img2imgreq.negative_prompt = negative_prompt
+        print(img2imgreq.prompt)
+        print(img2imgreq.negative_prompt)
+        print(img2imgreq)
         if init_images is None:
             raise HTTPException(status_code=404, detail="Init image not found")
 
