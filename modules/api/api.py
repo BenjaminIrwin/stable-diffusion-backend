@@ -168,7 +168,7 @@ class Api:
             res = self.users_db.where('api_key', '==', api_key).get()
             if len(res) > 0:
                 return True
-        raise HTTPException(status_code=401, detail="Incorrect api_key")
+        raise HTTPException(status_code=404, detail="Incorrect api_key provided")
 
     def get_script(self, script_name, script_runner):
         if script_name is None:
