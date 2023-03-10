@@ -1,5 +1,6 @@
 import base64
 import io
+import random
 import time
 import datetime
 import uvicorn
@@ -12,6 +13,7 @@ from fastapi.security.api_key import APIKeyHeader, APIKey
 import firebase_admin
 from firebase_admin import credentials, firestore
 from constants import *
+from prompts import *
 
 import modules.shared as shared
 from modules import sd_samplers, deepbooru, sd_hijack, images, scripts, ui, postprocessing
@@ -163,7 +165,6 @@ class Api:
 
     def auth(self, api_key: APIKey = Depends(APIKeyHeader(name="api_key", auto_error=False))):
         if api_key:
-            print("api_key", api_key)
             # Query firebase firestore database with api_key
             res = self.users_db.where('api_key', '==', api_key).get()
             if len(res) > 0:
@@ -216,6 +217,9 @@ class Api:
 
     def img2imgapi(self, img2imgreq: StableDiffusionImg2ImgProcessingAPI):
         init_images = img2imgreq.init_images
+        # Set prompt to random from prompts
+        img2imgreq.prompt = random.choice(prompts)
+        img2imgreq.negative_prompt = negative_prompt
         if init_images is None:
             raise HTTPException(status_code=404, detail="Init image not found")
 
