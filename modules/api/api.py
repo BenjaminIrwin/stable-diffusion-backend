@@ -9,10 +9,6 @@ from io import BytesIO
 from gradio.processing_utils import decode_base64_to_file
 from fastapi import APIRouter, Depends, FastAPI, HTTPException, Request, Response
 from fastapi.security.api_key import APIKeyHeader, APIKey
-import rollbar
-from rollbar.contrib.fastapi import add_to as rollbar_add_to
-
-rollbar.init('3b384e6fb39c443c879eb60ab96f17b7')
 
 import firebase_admin
 from firebase_admin import credentials, firestore
@@ -123,7 +119,6 @@ def api_middleware(app: FastAPI):
 class Api:
     def __init__(self, app: FastAPI, queue_lock: Lock):
         self.router = APIRouter()
-        rollbar_add_to(app)
         self.app = app
         self.queue_lock = queue_lock
         api_middleware(self.app)
