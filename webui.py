@@ -188,7 +188,10 @@ def api_only():
     initialize()
 
     app = FastAPI()
+    print("Starting API server")
     rollbar_add_to(app)
+    print("Rollbar added to API server")
+    print(rollbar)
     setup_cors(app)
     app.add_middleware(GZipMiddleware, minimum_size=1000)
     api = create_api(app)
