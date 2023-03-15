@@ -220,8 +220,6 @@ class Api:
 
     def img2imgapi(self, img2imgreq: StableDiffusionImg2ImgProcessingAPI):
         init_images = img2imgreq.init_images
-        # Set prompt to random from prompts
-        img2imgreq.prompt = random.choice(prompts)
         img2imgreq.negative_prompt = negative_prompt
         if init_images is None:
             raise HTTPException(status_code=404, detail="Init image not found")
