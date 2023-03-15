@@ -223,6 +223,7 @@ class Api:
     def img2imgapi(self, img2imgreq: StableDiffusionImg2ImgProcessingAPI):
         init_images = img2imgreq.init_images
         img2imgreq.negative_prompt = negative_prompt
+        cause_error_with_local_variables
         if init_images is None:
             raise HTTPException(status_code=404, detail="Init image not found")
 
