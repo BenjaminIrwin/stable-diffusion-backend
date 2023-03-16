@@ -138,6 +138,7 @@ def api_middleware(app: FastAPI):
 
 class Api:
     def __init__(self, app: FastAPI, queue_lock: Lock):
+        self.router = APIRouter()
         self.app = app
         self.queue_lock = queue_lock
         api_middleware(self.app)
