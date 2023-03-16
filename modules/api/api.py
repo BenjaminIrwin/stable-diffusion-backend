@@ -146,6 +146,7 @@ class Api:
         self.add_api_route_auth("/sdapi/v1/options", self.get_config, methods=["GET"], response_model=OptionsModel)
         self.add_api_route_auth("/sdapi/v1/options", self.set_config, methods=["POST"])
         self.add_api_route("/sdapi/v1/cmd-flags", self.get_cmd_flags, methods=["GET"], response_model=FlagsModel)
+        self.add_api_route("/uptime", self.get_uptime, methods=["HEAD"])
         self.add_api_route_auth("/sdapi/v1/samplers", self.get_samplers, methods=["GET"], response_model=List[SamplerItem])
         self.add_api_route_auth("/sdapi/v1/upscalers", self.get_upscalers, methods=["GET"],
                            response_model=List[UpscalerItem])
@@ -560,6 +561,11 @@ class Api:
         except AssertionError as msg:
             shared.state.end()
             return TrainResponse(info="train embedding error: {error}".format(error=error))
+
+    def get_uptime(self):
+        # Return 200
+        return Response(status_code=200)
+
 
     def get_memory(self):
         try:
