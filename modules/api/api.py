@@ -138,9 +138,6 @@ def api_middleware(app: FastAPI):
 
 class Api:
     def __init__(self, app: FastAPI, queue_lock: Lock):
-        self.router = APIRouter()
-        self.router.route_class = RollbarLoggingRoute
-        print("Rollbar added to API server")
         self.app = app
         self.queue_lock = queue_lock
         api_middleware(self.app)
@@ -610,5 +607,7 @@ class Api:
 
     def launch(self, server_name, port):
         self.app.include_router(self.router)
+        rollbar_add_to(self.router)
+        print("Rollbar added to API server")
         print('Launching server on {server_name}:{port}'.format(server_name=server_name, port=port))
         uvicorn.run(self.app, host=server_name, port=port)
