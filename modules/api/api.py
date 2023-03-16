@@ -184,6 +184,7 @@ class Api:
 
         # Fetch the service account key JSON file contents
         cred = credentials.Certificate(fs_sa_key)
+        app = firebase_admin.initialize_app(cred)
         db = firestore.client()
 
         self.users_db = db.collection('customers')
