@@ -9,6 +9,14 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
 from packaging import version
 
+from rollbar.contrib.fastapi import ReporterMiddleware as RollbarMiddleware
+import rollbar
+
+
+rollbar.init('3b384e6fb39c443c879eb60ab96f17b7',
+             handler='async',
+             )
+
 import logging
 logging.getLogger("xformers").addFilter(lambda record: 'A matching Triton is not available' not in record.getMessage())
 
@@ -183,6 +191,7 @@ def api_only():
     initialize()
 
     app = FastAPI()
+    app.add_middleware(RollbarMiddleware)  # should be added as the first middleware
     setup_cors(app)
     app.add_middleware(GZipMiddleware, minimum_size=1000)
     api = create_api(app)
