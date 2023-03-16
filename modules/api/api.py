@@ -15,7 +15,6 @@ from rollbar.contrib.fastapi import add_to as rollbar_add_to
 
 
 rollbar.init('3b384e6fb39c443c879eb60ab96f17b7',
-             handler='async',
              include_request_body=True
              )
 
