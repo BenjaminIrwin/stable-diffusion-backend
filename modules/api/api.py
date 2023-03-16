@@ -12,6 +12,8 @@ from fastapi.security.api_key import APIKeyHeader, APIKey
 
 import rollbar
 from rollbar.contrib.fastapi import add_to as rollbar_add_to
+from rollbar.contrib.fastapi.routing import RollbarLoggingRoute
+
 
 rollbar.init('3b384e6fb39c443c879eb60ab96f17b7',
              handler='async',
@@ -137,7 +139,7 @@ def api_middleware(app: FastAPI):
 class Api:
     def __init__(self, app: FastAPI, queue_lock: Lock):
         self.router = APIRouter()
-        rollbar_add_to(self.router)
+        self.router.route_class = RollbarLoggingRoute
         print("Rollbar added to API server")
         self.app = app
         self.queue_lock = queue_lock
