@@ -1001,6 +1001,8 @@ class StableDiffusionProcessingImg2Img(StableDiffusionProcessing):
                 print('CROPPING IMAGE:')
                 print('CROP REGION: ', crop_region)
                 print('IMAGE SIZE: ', image.size)
+                print('SELF WIDTH: ', self.width)
+                print('SELF HEIGHT: ', self.height)
                 image = images.resize_image(2, image, self.width, self.height)
                 print('RESIZED IMAGE SIZE: ', image.size)
 
