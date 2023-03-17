@@ -947,27 +947,12 @@ class StableDiffusionProcessingImg2Img(StableDiffusionProcessing):
                 mask = image_mask.convert('L')
                 # Adjust inpaint_full_res_padding to image size
                 adjusted_padding = (self.inpaint_full_res_padding / 512) * mask.width
-                print('PADDING ADJUSTED FROM ', self.inpaint_full_res_padding, ' TO ', adjusted_padding)
                 self.inpaint_full_res_padding = adjusted_padding
                 crop_region = masking.get_crop_region(np.array(mask), self.inpaint_full_res_padding)
-                print('CROP REGION: ', crop_region)
                 crop_region = masking.expand_crop_region(crop_region, self.width, self.height, mask.width, mask.height)
-                print('EXPANDED CROP REGION: ', crop_region)
                 x1, y1, x2, y2 = crop_region
                 mask = mask.crop(crop_region)
-                print('MASK SIZE: ', mask.size)
                 image_mask = images.resize_image(2, mask, self.width, self.height)
-                # Convert the image to bytes
-                with BytesIO() as buffer:
-                    image_mask.save(buffer, format="JPEG")
-                    img_bytes = buffer.getvalue()
-
-                # Convert the bytes to a base64 string
-                base64_img = base64.b64encode(img_bytes).decode("ascii")
-
-                # Print the base64 string
-                print('IMAGE MASK: ')
-                print(base64_img)
                 self.paste_to = (x1, y1, x2-x1, y2-y1)
             else:
                 image_mask = images.resize_image(self.resize_mode, image_mask, self.width, self.height)
@@ -998,13 +983,7 @@ class StableDiffusionProcessingImg2Img(StableDiffusionProcessing):
             # crop_region is not None if we are doing inpaint full res
             if crop_region is not None:
                 image = image.crop(crop_region)
-                print('CROPPING IMAGE:')
-                print('CROP REGION: ', crop_region)
-                print('IMAGE SIZE: ', image.size)
-                print('SELF WIDTH: ', self.width)
-                print('SELF HEIGHT: ', self.height)
                 image = images.resize_image(2, image, self.width, self.height)
-                print('RESIZED IMAGE SIZE: ', image.size)
 
             if image_mask is not None:
                 if self.inpainting_fill != 1:
@@ -1012,18 +991,6 @@ class StableDiffusionProcessingImg2Img(StableDiffusionProcessing):
 
             if add_color_corrections:
                 self.color_corrections.append(setup_color_correction(image))
-
-            # Convert the image to bytes
-            with BytesIO() as buffer:
-                image.save(buffer, format="JPEG")
-                img_bytes = buffer.getvalue()
-
-            # Convert the bytes to a base64 string
-            base64_img = base64.b64encode(img_bytes).decode("ascii")
-
-            # Print the base64 string
-            print('IMAGE: ')
-            print(base64_img)
 
             image = np.array(image).astype(np.float32) / 255.0
             image = np.moveaxis(image, 2, 0)
