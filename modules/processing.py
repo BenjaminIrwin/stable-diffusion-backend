@@ -950,7 +950,9 @@ class StableDiffusionProcessingImg2Img(StableDiffusionProcessing):
                 print('PADDING ADJUSTED FROM ', self.inpaint_full_res_padding, ' TO ', adjusted_padding)
                 self.inpaint_full_res_padding = adjusted_padding
                 crop_region = masking.get_crop_region(np.array(mask), self.inpaint_full_res_padding)
-                crop_region = masking.expand_crop_region(crop_region, self.width, self.height, mask.width, mask.height)
+                print('CROP REGION: ', crop_region)
+                crop_region = masking.expand_crop_region(crop_region, self.width, self.height, 512, 512)
+                print('EXPANDED CROP REGION: ', crop_region)
                 x1, y1, x2, y2 = crop_region
                 mask = mask.crop(crop_region)
                 image_mask = images.resize_image(2, mask, self.width, self.height)
