@@ -924,6 +924,12 @@ class StableDiffusionProcessingImg2Img(StableDiffusionProcessing):
         self.nmask = None
         self.image_conditioning = None
 
+        # Print all properties of this class, including inherited ones
+        print('ALL PROPERTIES OF PROCESSING CLASS:')
+        for key, value in self.__dict__.items():
+            print(f"{key}: {value}")
+
+
     def init(self, all_prompts, all_seeds, all_subseeds):
         self.sampler = sd_samplers.create_sampler(self.sampler_name, self.sd_model)
         crop_region = None
@@ -945,9 +951,10 @@ class StableDiffusionProcessingImg2Img(StableDiffusionProcessing):
                 crop_region = masking.get_crop_region(np.array(mask), self.inpaint_full_res_padding)
                 crop_region = masking.expand_crop_region(crop_region, self.width, self.height, mask.width, mask.height)
                 x1, y1, x2, y2 = crop_region
-
+                print('INPAINT AT FULL RES CROP REGION:', crop_region, 'MASK SIZE:', mask.width, mask.height)
                 mask = mask.crop(crop_region)
                 image_mask = images.resize_image(2, mask, self.width, self.height)
+                print('IMAGE MASK FINAL DIMS', image_mask.width, image_mask.height)
                 self.paste_to = (x1, y1, x2-x1, y2-y1)
             else:
                 image_mask = images.resize_image(self.resize_mode, image_mask, self.width, self.height)
