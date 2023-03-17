@@ -4,6 +4,7 @@ import math
 import os
 import sys
 import warnings
+from io import BytesIO
 
 import torch
 import numpy as np
@@ -949,8 +950,10 @@ class StableDiffusionProcessingImg2Img(StableDiffusionProcessing):
                 x1, y1, x2, y2 = crop_region
                 mask = mask.crop(crop_region)
                 image_mask = images.resize_image(2, mask, self.width, self.height)
-                print(base64.b64encode(image_mask.tobytes()))
-                print(base64.b64encode(mask.tobytes()))
+                print('MASK:')
+                print(mask)
+                print('MASK RESIZED:')
+                print(image_mask)
                 self.paste_to = (x1, y1, x2-x1, y2-y1)
             else:
                 image_mask = images.resize_image(self.resize_mode, image_mask, self.width, self.height)
