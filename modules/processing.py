@@ -998,7 +998,11 @@ class StableDiffusionProcessingImg2Img(StableDiffusionProcessing):
             # crop_region is not None if we are doing inpaint full res
             if crop_region is not None:
                 image = image.crop(crop_region)
+                print('CROPPING IMAGE:')
+                print('CROP REGION: ', crop_region)
+                print('IMAGE SIZE: ', image.size)
                 image = images.resize_image(2, image, self.width, self.height)
+                print('RESIZED IMAGE SIZE: ', image.size)
 
             if image_mask is not None:
                 if self.inpainting_fill != 1:
