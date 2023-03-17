@@ -950,10 +950,17 @@ class StableDiffusionProcessingImg2Img(StableDiffusionProcessing):
                 x1, y1, x2, y2 = crop_region
                 mask = mask.crop(crop_region)
                 image_mask = images.resize_image(2, mask, self.width, self.height)
-                print('MASK:')
-                print(mask)
-                print('MASK RESIZED:')
-                print(image_mask)
+                # Convert the image to bytes
+                with BytesIO() as buffer:
+                    image_mask.save(buffer, format="JPEG")
+                    img_bytes = buffer.getvalue()
+
+                # Convert the bytes to a base64 string
+                base64_img = base64.b64encode(img_bytes).decode("ascii")
+
+                # Print the base64 string
+                print('IMAGE MASK: ')
+                print(base64_img)
                 self.paste_to = (x1, y1, x2-x1, y2-y1)
             else:
                 image_mask = images.resize_image(self.resize_mode, image_mask, self.width, self.height)
@@ -992,6 +999,18 @@ class StableDiffusionProcessingImg2Img(StableDiffusionProcessing):
 
             if add_color_corrections:
                 self.color_corrections.append(setup_color_correction(image))
+
+            # Convert the image to bytes
+            with BytesIO() as buffer:
+                image.save(buffer, format="JPEG")
+                img_bytes = buffer.getvalue()
+
+            # Convert the bytes to a base64 string
+            base64_img = base64.b64encode(img_bytes).decode("ascii")
+
+            # Print the base64 string
+            print('IMAGE: ')
+            print(base64_img)
 
             image = np.array(image).astype(np.float32) / 255.0
             image = np.moveaxis(image, 2, 0)
