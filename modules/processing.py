@@ -72,7 +72,7 @@ def apply_overlay(image, paste_loc, index, overlays, transparent_bg):
     if paste_loc is not None:
         x, y, w, h = paste_loc
         base_image = Image.new('RGBA', (overlay.width, overlay.height))
-        image = images.resize_image(1, image, w, h)
+        image = images.resize_image(1, image, w, h, transparent_bg)
         # Convert the image to bytes
         with BytesIO() as buffer:
             image.save(buffer, format="PNG")
