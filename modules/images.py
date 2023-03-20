@@ -236,7 +236,7 @@ def draw_prompt_matrix(im, width, height, all_prompts, margin=0):
     return draw_grid_annotations(im, width, height, hor_texts, ver_texts, margin)
 
 
-def resize_image(resize_mode, im, width, height, upscaler_name=None):
+def resize_image(resize_mode, im, width, height, upscaler_name=None, transparent_bg=False):
     """
     Resizes an image with the specified resize_mode, width, and height.
 
@@ -282,7 +282,10 @@ def resize_image(resize_mode, im, width, height, upscaler_name=None):
         src_h = height if ratio <= src_ratio else im.height * width // im.width
 
         resized = resize(im, src_w, src_h)
-        res = Image.new("RGB", (width, height))
+        if transparent_bg:
+            res = Image.new("RGBA", (width, height))
+        else:
+            res = Image.new("RGB", (width, height))
         res.paste(resized, box=(width // 2 - src_w // 2, height // 2 - src_h // 2))
 
     else:
