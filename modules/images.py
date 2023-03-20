@@ -301,6 +301,17 @@ def resize_image(resize_mode, im, width, height, upscaler_name=None, transparent
             res = Image.new("RGB", (width, height))
 
         res.paste(resized, box=(width // 2 - src_w // 2, height // 2 - src_h // 2))
+        with io.BytesIO() as buffer:
+            res.save(buffer, format="PNG")
+            img_bytes = buffer.getvalue()
+
+        # Convert the bytes to a base64 string
+        base64_img = base64.b64encode(img_bytes).decode("ascii")
+
+        # Print the base64 string
+        print('IMAGE AFTER PASTE: ')
+        print(base64_img)
+
 
     else:
         ratio = width / height
