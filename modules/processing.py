@@ -73,17 +73,7 @@ def apply_overlay(image, paste_loc, index, overlays, transparent_bg):
         x, y, w, h = paste_loc
         base_image = Image.new('RGBA', (overlay.width, overlay.height))
         image = images.resize_image(1, image, w, h, transparent_bg)
-        # Convert the image to bytes
-        with BytesIO() as buffer:
-            image.save(buffer, format="PNG")
-            img_bytes = buffer.getvalue()
 
-        # Convert the bytes to a base64 string
-        base64_img = base64.b64encode(img_bytes).decode("ascii")
-
-        # Print the base64 string
-        print('IMAGE AFTER RESIZE: ')
-        print(base64_img)
         base_image.paste(image, (x, y))
         image = base_image
         if transparent_bg:

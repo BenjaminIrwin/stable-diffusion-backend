@@ -1,3 +1,4 @@
+import base64
 import datetime
 import sys
 import traceback
@@ -282,6 +283,17 @@ def resize_image(resize_mode, im, width, height, upscaler_name=None, transparent
         src_h = height if ratio <= src_ratio else im.height * width // im.width
 
         resized = resize(im, src_w, src_h)
+        # Convert the image to bytes
+        with io.BytesIO() as buffer:
+            resized.save(buffer, format="PNG")
+            img_bytes = buffer.getvalue()
+
+        # Convert the bytes to a base64 string
+        base64_img = base64.b64encode(img_bytes).decode("ascii")
+
+        # Print the base64 string
+        print('IMAGE AFTER RESIZE: ')
+        print(base64_img)
         if transparent_bg:
             res = Image.new("RGBA", (width, height))
         else:
