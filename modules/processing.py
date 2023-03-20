@@ -58,8 +58,11 @@ def apply_color_correction(correction, original_image):
 
     return image
 
+# def remove_bg()
 
 def apply_overlay(image, paste_loc, index, overlays):
+    print('INSIDE APPLY_OVERLAY: ')
+    print(type(image))
     if overlays is None or index >= len(overlays):
         return image
 
