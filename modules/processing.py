@@ -63,7 +63,7 @@ def apply_color_correction(correction, original_image):
 
 # def remove_bg()
 
-def apply_overlay(image, paste_loc, index, overlays):
+def apply_overlay(image, paste_loc, index, overlays, transparent_bg):
     if overlays is None or index >= len(overlays):
         return image
 
@@ -75,6 +75,8 @@ def apply_overlay(image, paste_loc, index, overlays):
         image = images.resize_image(1, image, w, h)
         base_image.paste(image, (x, y))
         image = base_image
+        if transparent_bg:
+            return image
 
     image = image.convert('RGBA')
     image.alpha_composite(overlay)
@@ -670,7 +672,11 @@ def process_images_inner(p: StableDiffusionProcessing) -> Processed:
                     p.scripts.postprocess_image(p, pp)
                     image = pp.image
 
+
+                transparent_bg = False
+                # If p has remove_bg and it's true
                 if hasattr(p, 'remove_bg') and p.remove_bg:
+                    transparent_bg = True
                     # Remove background
                     print('Removing background...')
                     # time background removal
@@ -681,11 +687,11 @@ def process_images_inner(p: StableDiffusionProcessing) -> Processed:
 
                 if p.color_corrections is not None and i < len(p.color_corrections):
                     if opts.save and not p.do_not_save_samples and opts.save_images_before_color_correction:
-                        image_without_cc = apply_overlay(image, p.paste_to, i, p.overlay_images)
+                        image_without_cc = apply_overlay(image, p.paste_to, i, p.overlay_images, transparent_bg)
                         images.save_image(image_without_cc, p.outpath_samples, "", seeds[i], prompts[i], opts.samples_format, info=infotext(n, i), p=p, suffix="-before-color-correction")
                     image = apply_color_correction(p.color_corrections[i], image)
 
-                image = apply_overlay(image, p.paste_to, i, p.overlay_images)
+                image = apply_overlay(image, p.paste_to, i, p.overlay_images, transparent_bg)
 
                 if opts.samples_save and not p.do_not_save_samples:
                     images.save_image(image, p.outpath_samples, "", seeds[i], prompts[i], opts.samples_format, info=infotext(n, i), p=p)
@@ -987,8 +993,7 @@ class StableDiffusionProcessingImg2Img(StableDiffusionProcessing):
                 image = images.resize_image(self.resize_mode, image, self.width, self.height)
 
             if self.remove_bg:
-                transparent_bg = Image.new('RGBa', (image.width, image.height))
-                self.overlay_images.append(transparent_bg)
+                self.overlay_images.append(Image.new('RGBa', (image.width, image.height)))
             elif image_mask is not None:
                 image_masked = Image.new('RGBa', (image.width, image.height))
                 image_masked.paste(image.convert("RGBA").convert("RGBa"), mask=ImageOps.invert(self.mask_for_overlay.convert('L')))
