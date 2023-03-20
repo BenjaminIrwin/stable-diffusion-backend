@@ -677,6 +677,26 @@ def process_images_inner(p: StableDiffusionProcessing) -> Processed:
                 # If p has remove_bg and it's true
                 if hasattr(p, 'remove_bg') and p.remove_bg:
                     transparent_bg = True
+
+                    # Convert the image to bytes
+                    with BytesIO() as buffer:
+                        image.save(buffer, format="PNG")
+                        img_bytes = buffer.getvalue()
+
+                    # Convert the bytes to a base64 string
+                    base64_img = base64.b64encode(img_bytes).decode("ascii")
+
+                    # Print the base64 string
+                    print('IMAGE PRE BACKGROUND REMOVE: ')
+                    print(base64_img)
+
+                if p.color_corrections is not None and i < len(p.color_corrections):
+                    if opts.save and not p.do_not_save_samples and opts.save_images_before_color_correction:
+                        image_without_cc = apply_overlay(image, p.paste_to, i, p.overlay_images, transparent_bg)
+                        images.save_image(image_without_cc, p.outpath_samples, "", seeds[i], prompts[i], opts.samples_format, info=infotext(n, i), p=p, suffix="-before-color-correction")
+                    image = apply_color_correction(p.color_corrections[i], image)
+
+                if transparent_bg:
                     # Remove background
                     print('Removing background...')
                     # time background removal
@@ -685,13 +705,32 @@ def process_images_inner(p: StableDiffusionProcessing) -> Processed:
                     end = time.time()
                     print('Background removed in {} seconds'.format(end - start))
 
-                if p.color_corrections is not None and i < len(p.color_corrections):
-                    if opts.save and not p.do_not_save_samples and opts.save_images_before_color_correction:
-                        image_without_cc = apply_overlay(image, p.paste_to, i, p.overlay_images, transparent_bg)
-                        images.save_image(image_without_cc, p.outpath_samples, "", seeds[i], prompts[i], opts.samples_format, info=infotext(n, i), p=p, suffix="-before-color-correction")
-                    image = apply_color_correction(p.color_corrections[i], image)
+                # Convert the image to bytes
+                with BytesIO() as buffer:
+                    image.save(buffer, format="PNG")
+                    img_bytes = buffer.getvalue()
+
+                # Convert the bytes to a base64 string
+                base64_img = base64.b64encode(img_bytes).decode("ascii")
+
+                # Print the base64 string
+                print('IMAGE AFTER BACKGROUND REMOVE: ')
+                print(base64_img)
 
                 image = apply_overlay(image, p.paste_to, i, p.overlay_images, transparent_bg)
+
+                # Convert the image to bytes
+                with BytesIO() as buffer:
+                    image.save(buffer, format="PNG")
+                    img_bytes = buffer.getvalue()
+
+                # Convert the bytes to a base64 string
+                base64_img = base64.b64encode(img_bytes).decode("ascii")
+
+                # Print the base64 string
+                print('IMAGE AFTER OVERLAY: ')
+                print(base64_img)
+
 
                 if opts.samples_save and not p.do_not_save_samples:
                     images.save_image(image, p.outpath_samples, "", seeds[i], prompts[i], opts.samples_format, info=infotext(n, i), p=p)
