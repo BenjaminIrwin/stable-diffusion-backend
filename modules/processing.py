@@ -14,8 +14,8 @@ import random
 import cv2
 from skimage import exposure
 from typing import Any, Dict, List, Optional
-from rembg import remove
-from rembg.session_factory import new_session
+from modules.rembg.rembg.bg import remove
+from modules.rembg.rembg.session_factory import new_session
 
 import modules.sd_hijack
 from modules import devices, prompt_parser, masking, sd_samplers, lowvram, generation_parameters_copypaste, script_callbacks, extra_networks, sd_vae_approx, scripts
