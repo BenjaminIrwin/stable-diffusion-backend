@@ -72,7 +72,7 @@ def apply_overlay(image, paste_loc, index, overlays, transparent_bg):
     if paste_loc is not None:
         x, y, w, h = paste_loc
         base_image = Image.new('RGBA', (overlay.width, overlay.height))
-        image = images.resize_image(1, image, w, h, transparent_bg)
+        image = images.resize_image(1, image, w, h, transparent_bg= transparent_bg)
         base_image.paste(image, (x, y))
         image = base_image
         if transparent_bg:
@@ -676,6 +676,7 @@ def process_images_inner(p: StableDiffusionProcessing) -> Processed:
                 transparent_bg = False
                 # If p has remove_bg and it's true
                 if hasattr(p, 'remove_bg') and p.remove_bg:
+                    print('')
                     transparent_bg = True
 
                 if p.color_corrections is not None and i < len(p.color_corrections):
