@@ -254,6 +254,8 @@ def resize_image(resize_mode, im, width, height, upscaler_name=None, transparent
 
     upscaler_name = upscaler_name or opts.upscaler_for_img2img
 
+    print('LOCALS:', locals())
+
     def resize(im, w, h):
         if upscaler_name is None or upscaler_name == "None" or im.mode == 'L':
             return im.resize((w, h), resample=LANCZOS)
@@ -283,7 +285,6 @@ def resize_image(resize_mode, im, width, height, upscaler_name=None, transparent
         src_h = height if ratio <= src_ratio else im.height * width // im.width
 
         resized = resize(im, src_w, src_h)
-        resized.convert("RGBA")
         # Convert the image to bytes
         with io.BytesIO() as buffer:
             resized.save(buffer, format="PNG")

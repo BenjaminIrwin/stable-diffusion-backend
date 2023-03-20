@@ -73,7 +73,6 @@ def apply_overlay(image, paste_loc, index, overlays, transparent_bg):
         x, y, w, h = paste_loc
         base_image = Image.new('RGBA', (overlay.width, overlay.height))
         image = images.resize_image(1, image, w, h, transparent_bg)
-
         base_image.paste(image, (x, y))
         image = base_image
         if transparent_bg:
