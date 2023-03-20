@@ -675,7 +675,7 @@ def process_images_inner(p: StableDiffusionProcessing) -> Processed:
                     print('Removing background...')
                     # time background removal
                     start = time.time()
-                    image = remove(input, session=new_session('u2net_human_seg'))
+                    image = remove(image, session=new_session('u2net_human_seg'))
                     end = time.time()
                     print('Background removed in {} seconds'.format(end - start))
 
