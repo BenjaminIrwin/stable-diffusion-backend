@@ -3,6 +3,7 @@ import json
 import math
 import os
 import sys
+import time
 import warnings
 from io import BytesIO
 
@@ -13,6 +14,8 @@ import random
 import cv2
 from skimage import exposure
 from typing import Any, Dict, List, Optional
+from rembg import remove
+from rembg.session_factory import new_session
 
 import modules.sd_hijack
 from modules import devices, prompt_parser, masking, sd_samplers, lowvram, generation_parameters_copypaste, script_callbacks, extra_networks, sd_vae_approx, scripts
@@ -61,8 +64,6 @@ def apply_color_correction(correction, original_image):
 # def remove_bg()
 
 def apply_overlay(image, paste_loc, index, overlays):
-    print('INSIDE APPLY_OVERLAY: ')
-    print(type(image))
     if overlays is None or index >= len(overlays):
         return image
 
@@ -669,6 +670,15 @@ def process_images_inner(p: StableDiffusionProcessing) -> Processed:
                     p.scripts.postprocess_image(p, pp)
                     image = pp.image
 
+                if hasattr(p, 'remove_bg') and p.remove_bg:
+                    # Remove background
+                    print('Removing background...')
+                    # time background removal
+                    start = time.time()
+                    image = remove(input, session=new_session('u2net_human_seg'))
+                    end = time.time()
+                    print('Background removed in {} seconds'.format(end - start))
+
                 if p.color_corrections is not None and i < len(p.color_corrections):
                     if opts.save and not p.do_not_save_samples and opts.save_images_before_color_correction:
                         image_without_cc = apply_overlay(image, p.paste_to, i, p.overlay_images)
@@ -908,7 +918,7 @@ class StableDiffusionProcessingTxt2Img(StableDiffusionProcessing):
 class StableDiffusionProcessingImg2Img(StableDiffusionProcessing):
     sampler = None
 
-    def __init__(self, init_images: list = None, resize_mode: int = 0, denoising_strength: float = 0.75, image_cfg_scale: float = None, mask: Any = None, mask_blur: int = 4, inpainting_fill: int = 0, inpaint_full_res: bool = True, inpaint_full_res_padding: int = 0, inpainting_mask_invert: int = 0, initial_noise_multiplier: float = None, **kwargs):
+    def __init__(self, init_images: list = None, resize_mode: int = 0, denoising_strength: float = 0.75, image_cfg_scale: float = None, mask: Any = None, remove_bg: bool = False, mask_blur: int = 4, inpainting_fill: int = 0, inpaint_full_res: bool = True, inpaint_full_res_padding: int = 0, inpainting_mask_invert: int = 0, initial_noise_multiplier: float = None, **kwargs):
         super().__init__(**kwargs)
 
         self.init_images = init_images
@@ -928,6 +938,7 @@ class StableDiffusionProcessingImg2Img(StableDiffusionProcessing):
         self.mask = None
         self.nmask = None
         self.image_conditioning = None
+        self.remove_bg = remove_bg
 
     def init(self, all_prompts, all_seeds, all_subseeds):
         self.sampler = sd_samplers.create_sampler(self.sampler_name, self.sd_model)
@@ -975,10 +986,12 @@ class StableDiffusionProcessingImg2Img(StableDiffusionProcessing):
             if crop_region is None and self.resize_mode != 3:
                 image = images.resize_image(self.resize_mode, image, self.width, self.height)
 
-            if image_mask is not None:
+            if self.remove_bg:
+                transparent_bg = Image.new('RGBa', (image.width, image.height))
+                self.overlay_images.append(transparent_bg)
+            elif image_mask is not None:
                 image_masked = Image.new('RGBa', (image.width, image.height))
                 image_masked.paste(image.convert("RGBA").convert("RGBa"), mask=ImageOps.invert(self.mask_for_overlay.convert('L')))
-
                 self.overlay_images.append(image_masked.convert('RGBA'))
 
             # crop_region is not None if we are doing inpaint full res
