@@ -295,9 +295,11 @@ def resize_image(resize_mode, im, width, height, upscaler_name=None, transparent
         print('IMAGE AFTER RESIZE: ')
         print(base64_img)
         if transparent_bg:
+            print('IMAGE IS TRANSPARENT')
             res = Image.new("RGBA", (width, height))
         else:
             res = Image.new("RGB", (width, height))
+
         res.paste(resized, box=(width // 2 - src_w // 2, height // 2 - src_h // 2))
 
     else:
