@@ -675,17 +675,18 @@ def process_images_inner(p: StableDiffusionProcessing) -> Processed:
 
                 # If p has remove_bg and it's true
                 if hasattr(p, 'remove_bg') and p.remove_bg:
+                    no_bg_img = image
                     if p.color_corrections is not None and i < len(p.color_corrections):
                         if opts.save and not p.do_not_save_samples and opts.save_images_before_color_correction:
-                            image_without_cc = apply_overlay(image, p.paste_to, i, p.overlay_images, True)
-                            images.save_image(image_without_cc, p.outpath_samples, "", seeds[i], prompts[i], opts.samples_format, info=infotext(n, i), p=p, suffix="-before-color-correction")
-                        no_bg_img = apply_color_correction(p.color_corrections[i], image)
+                            image_without_cc = apply_overlay(no_bg_img, p.paste_to, i, p.overlay_images, True)
+                            images.save_image(image_without_cc, p.outpath_samples, "", seeds[i], prompts[i], opts.samples_format, info=infotext(n, i), p=p, suffix="nobg-before-color-correction")
+                        no_bg_img = apply_color_correction(p.color_corrections[i], no_bg_img)
 
 
                     print('Removing background...')
                     # time background removal
                     start = time.time()
-                    image = remove(no_bg_img, session=new_session('u2net_human_seg'))
+                    no_bg_img = remove(no_bg_img, session=new_session('u2net_human_seg'))
                     end = time.time()
                     print('Background removed in {} seconds'.format(end - start))
 
