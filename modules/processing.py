@@ -1014,8 +1014,6 @@ class StableDiffusionProcessingImg2Img(StableDiffusionProcessing):
             if crop_region is None and self.resize_mode != 3:
                 image = images.resize_image(self.resize_mode, image, self.width, self.height)
 
-            if self.remove_bg:
-                self.overlay_images.append(Image.new('RGBa', (image.width, image.height)))
             elif image_mask is not None:
                 image_masked = Image.new('RGBa', (image.width, image.height))
                 image_masked.paste(image.convert("RGBA").convert("RGBa"), mask=ImageOps.invert(self.mask_for_overlay.convert('L')))
