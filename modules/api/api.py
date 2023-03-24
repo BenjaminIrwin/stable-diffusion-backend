@@ -108,15 +108,15 @@ def api_middleware(app: FastAPI):
     @app.middleware("http")
     async def log_and_time(req: Request, call_next):
         ts = time.time()
-        request_body = await req.json()
-        res: Response = await call_next(req)
-        duration = str(round(time.time() - ts, 4))
-        res.headers["X-Process-Time"] = duration
         endpoint = req.scope.get('path', 'err')
-        api_key = req.headers.get('api_key', None)
-        print('REQUEST API KEY:')
-        print(api_key)
         if endpoint.startswith('/sdapi/v1/img2img'):
+            res: Response = await call_next(req)
+            duration = str(round(time.time() - ts, 4))
+            res.headers["X-Process-Time"] = duration
+            request_body = await req.json()
+            api_key = req.headers.get('api_key', None)
+            print('REQUEST API KEY:')
+            print(api_key)
             num_generations = request_body['batch_size'] * request_body['n_iter']
             print('Number of generations: ' + str(num_generations))
             print('API {t} {code} {prot}/{ver} {method} {endpoint} {cli} {duration}'.format(
