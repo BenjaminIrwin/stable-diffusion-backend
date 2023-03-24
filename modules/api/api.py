@@ -113,12 +113,13 @@ def api_middleware(app: FastAPI):
             res: Response = await call_next(req)
             duration = str(round(time.time() - ts, 4))
             res.headers["X-Process-Time"] = duration
-            request_body = await req.json()
             api_key = req.headers.get('api_key', None)
             print('REQUEST API KEY:')
             print(api_key)
-            num_generations = request_body['batch_size'] * request_body['n_iter']
-            print('Number of generations: ' + str(num_generations))
+            # print response body
+            print('RESPONSE BODY:')
+            print(res.body)
+            # print('Number of generations: ' + str(num_generations))
             print('API {t} {code} {prot}/{ver} {method} {endpoint} {cli} {duration}'.format(
                 t=datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f"),
                 code=res.status_code,
@@ -130,6 +131,7 @@ def api_middleware(app: FastAPI):
                 duration=duration,
             ))
             return res
+
 
 
 class Api:
