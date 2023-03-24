@@ -108,30 +108,22 @@ def api_middleware(app: FastAPI):
     @app.middleware("http")
     async def log_and_time(req: Request, call_next):
         ts = time.time()
+        res: Response = await call_next(req)
+        duration = str(round(time.time() - ts, 4))
+        res.headers["X-Process-Time"] = duration
         endpoint = req.scope.get('path', 'err')
-        if endpoint.startswith('/sdapi/v1/img2img'):
-            res: Response = await call_next(req)
-            duration = str(round(time.time() - ts, 4))
-            res.headers["X-Process-Time"] = duration
-            api_key = req.headers.get('api_key', None)
-            print('REQUEST API KEY:')
-            print(api_key)
-            # print response body
-            print('RESPONSE BODY:')
-            print(res.body)
-            # print('Number of generations: ' + str(num_generations))
-            print('API {t} {code} {prot}/{ver} {method} {endpoint} {cli} {duration}'.format(
-                t=datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f"),
-                code=res.status_code,
-                ver=req.scope.get('http_version', '0.0'),
-                cli=req.scope.get('client', ('0:0.0.0', 0))[0],
-                prot=req.scope.get('scheme', 'err'),
-                method=req.scope.get('method', 'err'),
-                endpoint=endpoint,
-                duration=duration,
-            ))
-            return res
-
+        # if shared.cmd_opts.api_log and endpoint.startswith('/sdapi'):
+        print('API {t} {code} {prot}/{ver} {method} {endpoint} {cli} {duration}'.format(
+            t=datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f"),
+            code=res.status_code,
+            ver=req.scope.get('http_version', '0.0'),
+            cli=req.scope.get('client', ('0:0.0.0', 0))[0],
+            prot=req.scope.get('scheme', 'err'),
+            method=req.scope.get('method', 'err'),
+            endpoint=endpoint,
+            duration=duration,
+        ))
+        return res
 
 
 class Api:
@@ -205,11 +197,11 @@ class Api:
         else:
             raise HTTPException(status_code=401, detail="No api_key provided")
 
-    # def increment_usage_count(self, api_key, param):
-    #     # Increment usage count in Firestore for user with api_key
-    #     user_ref = self.users_db.document(api_key)
-    #     user = user_ref.get()
-    #     user_ref.update({param: firestore.Increment(1)})
+    def increment_usage_count(self, api_key, param):
+        # Increment usage count in Firestore for user with api_key
+        user_ref = self.users_db.document(api_key)
+        user = user_ref.get()
+        user_ref.update({param: firestore.Increment(1)})
 
     def get_script(self, script_name, script_runner):
         if script_name is None:
@@ -303,6 +295,9 @@ class Api:
         if not img2imgreq.include_init_images:
             img2imgreq.init_images = None
             img2imgreq.mask = None
+
+        # Asynchronously increment the user's usage count in Firestore by number of images processed
+        # self.increment_usage_count(img2imgreq.api_key, len(processed.images))
 
         return ImageToImageResponse(images=b64images, parameters=vars(img2imgreq), info=processed.js())
 
