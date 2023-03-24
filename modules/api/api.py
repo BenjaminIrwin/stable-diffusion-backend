@@ -108,6 +108,7 @@ def api_middleware(app: FastAPI):
     @app.middleware("http")
     async def log_and_time(req: Request, call_next):
         ts = time.time()
+        request_body = await req.json()
         res: Response = await call_next(req)
         duration = str(round(time.time() - ts, 4))
         res.headers["X-Process-Time"] = duration
@@ -115,17 +116,19 @@ def api_middleware(app: FastAPI):
         api_key = req.headers.get('api_key', None)
         print('REQUEST API KEY:')
         print(api_key)
-        # if shared.cmd_opts.api_log and endpoint.startswith('/sdapi'):
-        print('API {t} {code} {prot}/{ver} {method} {endpoint} {cli} {duration}'.format(
-            t=datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f"),
-            code=res.status_code,
-            ver=req.scope.get('http_version', '0.0'),
-            cli=req.scope.get('client', ('0:0.0.0', 0))[0],
-            prot=req.scope.get('scheme', 'err'),
-            method=req.scope.get('method', 'err'),
-            endpoint=endpoint,
-            duration=duration,
-        ))
+        if endpoint.startswith('/sdapi/v1/img2img'):
+            num_generations = request_body['batch_size'] * request_body['n_iter']
+            print('Number of generations: ' + str(num_generations))
+            print('API {t} {code} {prot}/{ver} {method} {endpoint} {cli} {duration}'.format(
+                t=datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f"),
+                code=res.status_code,
+                ver=req.scope.get('http_version', '0.0'),
+                cli=req.scope.get('client', ('0:0.0.0', 0))[0],
+                prot=req.scope.get('scheme', 'err'),
+                method=req.scope.get('method', 'err'),
+                endpoint=endpoint,
+                duration=duration,
+            ))
         return res
 
 

@@ -700,19 +700,6 @@ def process_images_inner(p: StableDiffusionProcessing) -> Processed:
 
                 image = apply_overlay(image, p.paste_to, i, p.overlay_images, False)
 
-
-                # Convert the image to bytes
-                with BytesIO() as buffer:
-                    image.save(buffer, format="PNG")
-                    img_bytes = buffer.getvalue()
-
-                # Convert the bytes to a base64 string
-                base64_img = base64.b64encode(img_bytes).decode("ascii")
-
-                # Print the base64 string
-                print('IMAGE AFTER OVERLAY: ')
-                print(base64_img)
-
                 if opts.samples_save and not p.do_not_save_samples:
                     images.save_image(image, p.outpath_samples, "", seeds[i], prompts[i], opts.samples_format, info=infotext(n, i), p=p)
 
