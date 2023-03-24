@@ -9,6 +9,7 @@ from io import BytesIO
 from gradio.processing_utils import decode_base64_to_file
 from fastapi import APIRouter, Depends, FastAPI, HTTPException, Request, Response
 from fastapi.security.api_key import APIKeyHeader, APIKey
+from fastapi.routing import APIRoute
 
 import firebase_admin
 from firebase_admin import credentials, firestore
@@ -27,7 +28,7 @@ from modules.sd_models import checkpoints_list
 from modules.sd_models_config import find_checkpoint_config_near_filename
 from modules.realesrgan_model import get_realesrgan_models
 from modules import devices
-from typing import List
+from typing import List, Callable
 import piexif
 import piexif.helper
 
@@ -125,10 +126,26 @@ def api_middleware(app: FastAPI):
             ))
         return res
 
+class TimedRoute(APIRoute):
+    def get_route_handler(self) -> Callable:
+        original_route_handler = super().get_route_handler()
+
+        async def custom_route_handler(request: Request) -> Response:
+            before = time.time()
+            print(f"route request: {request}")
+            response: Response = await original_route_handler(request)
+            duration = time.time() - before
+            response.headers["X-Response-Time"] = str(duration)
+            print(f"route duration: {duration}")
+            print(f"route response: {response}")
+            print(f"route response headers: {response.headers}")
+            return response
+
+        return custom_route_handler
 
 class Api:
     def __init__(self, app: FastAPI, queue_lock: Lock):
-        self.router = APIRouter()
+        self.router = APIRouter(route_class=TimedRoute)
         self.app = app
         self.queue_lock = queue_lock
         api_middleware(self.app)
