@@ -129,7 +129,7 @@ def api_middleware(app: FastAPI):
                 endpoint=endpoint,
                 duration=duration,
             ))
-        return res
+            return res
 
 
 class Api:
