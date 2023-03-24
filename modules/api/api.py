@@ -112,17 +112,19 @@ def api_middleware(app: FastAPI):
         duration = str(round(time.time() - ts, 4))
         res.headers["X-Process-Time"] = duration
         endpoint = req.scope.get('path', 'err')
-        # if shared.cmd_opts.api_log and endpoint.startswith('/sdapi'):
-        print('API {t} {code} {prot}/{ver} {method} {endpoint} {cli} {duration}'.format(
-            t=datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f"),
-            code=res.status_code,
-            ver=req.scope.get('http_version', '0.0'),
-            cli=req.scope.get('client', ('0:0.0.0', 0))[0],
-            prot=req.scope.get('scheme', 'err'),
-            method=req.scope.get('method', 'err'),
-            endpoint=endpoint,
-            duration=duration,
-        ))
+        if endpoint.startswith('/sdapi'):
+            print('RESPONSE BODY: ')
+            print(res.body)
+            print('API {t} {code} {prot}/{ver} {method} {endpoint} {cli} {duration}'.format(
+                t=datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f"),
+                code=res.status_code,
+                ver=req.scope.get('http_version', '0.0'),
+                cli=req.scope.get('client', ('0:0.0.0', 0))[0],
+                prot=req.scope.get('scheme', 'err'),
+                method=req.scope.get('method', 'err'),
+                endpoint=endpoint,
+                duration=duration,
+            ))
         return res
 
 
