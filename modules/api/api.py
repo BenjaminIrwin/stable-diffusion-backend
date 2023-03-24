@@ -112,17 +112,17 @@ def api_middleware(app: FastAPI):
         duration = str(round(time.time() - ts, 4))
         res.headers["X-Process-Time"] = duration
         endpoint = req.scope.get('path', 'err')
-        if shared.cmd_opts.api_log and endpoint.startswith('/sdapi'):
-            print('API {t} {code} {prot}/{ver} {method} {endpoint} {cli} {duration}'.format(
-                t=datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f"),
-                code=res.status_code,
-                ver=req.scope.get('http_version', '0.0'),
-                cli=req.scope.get('client', ('0:0.0.0', 0))[0],
-                prot=req.scope.get('scheme', 'err'),
-                method=req.scope.get('method', 'err'),
-                endpoint=endpoint,
-                duration=duration,
-            ))
+        # if shared.cmd_opts.api_log and endpoint.startswith('/sdapi'):
+        print('API {t} {code} {prot}/{ver} {method} {endpoint} {cli} {duration}'.format(
+            t=datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f"),
+            code=res.status_code,
+            ver=req.scope.get('http_version', '0.0'),
+            cli=req.scope.get('client', ('0:0.0.0', 0))[0],
+            prot=req.scope.get('scheme', 'err'),
+            method=req.scope.get('method', 'err'),
+            endpoint=endpoint,
+            duration=duration,
+        ))
         return res
 
 
@@ -187,8 +187,6 @@ class Api:
         return self.app.add_api_route(path, endpoint, dependencies=[Depends(self.auth)], **kwargs)
 
     def auth(self, api_key: APIKey = Depends(APIKeyHeader(name="api_key", auto_error=False))):
-        print('API KEY:')
-        print(api_key)
         if api_key:
             # Query firebase firestore database with api_key
             res = self.users_db.where('api_key', '==', api_key).get()
@@ -198,6 +196,12 @@ class Api:
                 raise HTTPException(status_code=404, detail="Incorrect api_key provided")
         else:
             raise HTTPException(status_code=401, detail="No api_key provided")
+
+    def increment_usage_count(self, api_key, param):
+        # Increment usage count in Firestore for user with api_key
+        user_ref = self.users_db.document(api_key)
+        user = user_ref.get()
+        user_ref.update({param: firestore.Increment(1)})
 
     def get_script(self, script_name, script_runner):
         if script_name is None:
@@ -291,6 +295,9 @@ class Api:
         if not img2imgreq.include_init_images:
             img2imgreq.init_images = None
             img2imgreq.mask = None
+
+        # Asynchronously increment the user's usage count in Firestore by number of images processed
+        self.increment_usage_count(img2imgreq.api_key, len(processed.images))
 
         return ImageToImageResponse(images=b64images, parameters=vars(img2imgreq), info=processed.js())
 
@@ -608,3 +615,4 @@ class Api:
         self.app.include_router(self.router)
         print('Launching server on {server_name}:{port}'.format(server_name=server_name, port=port))
         uvicorn.run(self.app, host=server_name, port=port)
+
