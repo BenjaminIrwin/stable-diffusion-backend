@@ -13,6 +13,7 @@ from fastapi.routing import APIRoute
 
 import firebase_admin
 from firebase_admin import credentials, firestore
+from google.cloud import firestore as gfirestore
 from constants import *
 from prompts import *
 
@@ -214,11 +215,10 @@ class Api:
         else:
             raise HTTPException(status_code=401, detail="No api_key provided")
 
-    def increment_usage_count(self, api_key, param):
-        # Increment usage count in Firestore for user with api_key
-        user_ref = self.users_db.document(api_key)
-        user = user_ref.get()
-        user_ref.update({param: firestore.Increment(1)})
+    def increment_generation_count(self, api_key, amount):
+        user_ref = self.users_db.collection('customers').where('api_key', '==', api_key)
+        # Increment the count and if count does not exist, create it
+        user_ref.update({"generation_count": gfirestore.Increment(amount)})
 
     def get_script(self, script_name, script_runner):
         if script_name is None:
