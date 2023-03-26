@@ -107,22 +107,17 @@ def encode_pil_to_base64(image):
 
 
 def api_middleware(app: FastAPI):
-    async def set_body(request: Request, body: bytes):
+    async def set_body(self, request: Request):
+        receive_ = await request._receive()
+
         async def receive():
-            return {"type": "http.request", "body": body}
+            return receive_
 
         request._receive = receive
-
-    async def get_body(request: Request) -> bytes:
-        body = await request.body()
-        await set_body(request, body)
-        return body
 
     @app.middleware("http")
     async def log_and_time(req: Request, call_next):
         ts = time.time()
-        request_actual = get_body(req)
-        print(request_actual)
         res: Response = await call_next(req)
         duration = str(round(time.time() - ts, 4))
         res.headers["X-Process-Time"] = duration
@@ -164,52 +159,8 @@ class Api:
         self.app = app
         self.queue_lock = queue_lock
         api_middleware(self.app)
-        self.add_api_route_auth("/sdapi/v1/txt2img", self.text2imgapi, methods=["POST"],
-                                response_model=TextToImageResponse)
-        self.add_api_route_auth("/sdapi/v1/img2img", self.img2imgapi, methods=["POST"],
-                                response_model=ImageToImageResponse)
-        self.add_api_route_auth("/sdapi/v1/extra-single-image", self.extras_single_image_api, methods=["POST"],
-                                response_model=ExtrasSingleImageResponse)
-        self.add_api_route_auth("/sdapi/v1/extra-batch-images", self.extras_batch_images_api, methods=["POST"],
-                                response_model=ExtrasBatchImagesResponse)
-        self.add_api_route_auth("/sdapi/v1/png-info", self.pnginfoapi, methods=["POST"], response_model=PNGInfoResponse)
-        self.add_api_route_auth("/sdapi/v1/progress", self.progressapi, methods=["GET"],
-                                response_model=ProgressResponse)
-        self.add_api_route_auth("/sdapi/v1/interrogate", self.interrogateapi, methods=["POST"])
-        self.add_api_route_auth("/sdapi/v1/interrupt", self.interruptapi, methods=["POST"])
-        self.add_api_route_auth("/sdapi/v1/skip", self.skip, methods=["POST"])
-        self.add_api_route_auth("/sdapi/v1/options", self.get_config, methods=["GET"], response_model=OptionsModel)
-        self.add_api_route_auth("/sdapi/v1/options", self.set_config, methods=["POST"])
-        self.add_api_route("/sdapi/v1/cmd-flags", self.get_cmd_flags, methods=["GET"], response_model=FlagsModel)
-        self.add_api_route("/uptime", self.get_uptime, methods=["HEAD"])
-        self.add_api_route_auth("/sdapi/v1/samplers", self.get_samplers, methods=["GET"],
-                                response_model=List[SamplerItem])
-        self.add_api_route_auth("/sdapi/v1/upscalers", self.get_upscalers, methods=["GET"],
-                                response_model=List[UpscalerItem])
-        self.add_api_route_auth("/sdapi/v1/sd-models", self.get_sd_models, methods=["GET"],
-                                response_model=List[SDModelItem])
-        self.add_api_route_auth("/sdapi/v1/hypernetworks", self.get_hypernetworks, methods=["GET"],
-                                response_model=List[HypernetworkItem])
-        self.add_api_route_auth("/sdapi/v1/face-restorers", self.get_face_restorers, methods=["GET"],
-                                response_model=List[FaceRestorerItem])
-        self.add_api_route_auth("/sdapi/v1/realesrgan-models", self.get_realesrgan_models, methods=["GET"],
-                                response_model=List[RealesrganItem])
-        self.add_api_route_auth("/sdapi/v1/prompt-styles", self.get_prompt_styles, methods=["GET"],
-                                response_model=List[PromptStyleItem])
-        self.add_api_route_auth("/sdapi/v1/embeddings", self.get_embeddings, methods=["GET"],
-                                response_model=EmbeddingsResponse)
-        self.add_api_route_auth("/sdapi/v1/refresh-checkpoints", self.refresh_checkpoints, methods=["POST"])
-        self.add_api_route_auth("/sdapi/v1/create/embedding", self.create_embedding, methods=["POST"],
-                                response_model=CreateResponse)
-        self.add_api_route_auth("/sdapi/v1/create/hypernetwork", self.create_hypernetwork, methods=["POST"],
-                                response_model=CreateResponse)
-        self.add_api_route_auth("/sdapi/v1/preprocess", self.preprocess, methods=["POST"],
-                                response_model=PreprocessResponse)
-        self.add_api_route_auth("/sdapi/v1/train/embedding", self.train_embedding, methods=["POST"],
-                                response_model=TrainResponse)
-        self.add_api_route_auth("/sdapi/v1/train/hypernetwork", self.train_hypernetwork, methods=["POST"],
-                                response_model=TrainResponse)
-        self.add_api_route_auth("/sdapi/v1/memory", self.get_memory, methods=["GET"], response_model=MemoryResponse)
+        self.router.add_api_route("/sdapi/v1/img2img", self.img2imgapi, methods=["POST"],
+                                response_model=ImageToImageResponse, route_class_override=TimedRoute)
 
         # Fetch the service account key JSON file contents
         cred = credentials.Certificate(fs_sa_key)
