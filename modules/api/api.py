@@ -206,8 +206,8 @@ class Api:
 
         self.users_db = db.collection('customers')
 
-    def add_api_route(self, path: str, endpoint, **kwargs):
-        return self.app.add_api_route(path, endpoint, **kwargs)
+    def add_api_route(self, path: str, endpoint, route_class_override=None, **kwargs):
+        return self.app.add_api_route(path, endpoint, route_class_override, **kwargs)
 
     def add_api_route_auth(self, path: str, endpoint, route_class_override=None, **kwargs):
         return self.app.add_api_route(path, endpoint, dependencies=[Depends(self.auth)], route_class_override=route_class_override, **kwargs)
