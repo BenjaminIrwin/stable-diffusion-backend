@@ -322,7 +322,7 @@ class Api:
             img2imgreq.mask = None
 
         # Asynchronously increment the user's usage count in Firestore by number of images processed
-        self.increment_generation_count(img2imgreq.api_key, len(processed.images))
+        # self.increment_generation_count(img2imgreq.api_key, len(processed.images))
 
         return ImageToImageResponse(images=b64images, parameters=vars(img2imgreq), info=processed.js())
 
