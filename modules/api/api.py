@@ -127,6 +127,7 @@ def api_middleware(app: FastAPI):
             ))
         return res
 
+
 class TimedRoute(APIRoute):
     def get_route_handler(self) -> Callable:
         original_route_handler = super().get_route_handler()
@@ -144,20 +145,24 @@ class TimedRoute(APIRoute):
 
         return custom_route_handler
 
+
 class Api:
     def __init__(self, app: FastAPI, queue_lock: Lock):
         self.router = APIRouter(route_class=TimedRoute)
         self.app = app
         self.queue_lock = queue_lock
         api_middleware(self.app)
-        self.add_api_route_auth("/sdapi/v1/txt2img", self.text2imgapi, methods=["POST"], response_model=TextToImageResponse)
-        self.add_api_route_auth("/sdapi/v1/img2img", self.img2imgapi, methods=["POST"], response_model=ImageToImageResponse)
+        self.add_api_route_auth("/sdapi/v1/txt2img", self.text2imgapi, methods=["POST"],
+                                response_model=TextToImageResponse)
+        self.add_api_route_auth("/sdapi/v1/img2img", self.img2imgapi, methods=["POST"],
+                                response_model=ImageToImageResponse)
         self.add_api_route_auth("/sdapi/v1/extra-single-image", self.extras_single_image_api, methods=["POST"],
-                           response_model=ExtrasSingleImageResponse)
+                                response_model=ExtrasSingleImageResponse)
         self.add_api_route_auth("/sdapi/v1/extra-batch-images", self.extras_batch_images_api, methods=["POST"],
-                           response_model=ExtrasBatchImagesResponse)
+                                response_model=ExtrasBatchImagesResponse)
         self.add_api_route_auth("/sdapi/v1/png-info", self.pnginfoapi, methods=["POST"], response_model=PNGInfoResponse)
-        self.add_api_route_auth("/sdapi/v1/progress", self.progressapi, methods=["GET"], response_model=ProgressResponse)
+        self.add_api_route_auth("/sdapi/v1/progress", self.progressapi, methods=["GET"],
+                                response_model=ProgressResponse)
         self.add_api_route_auth("/sdapi/v1/interrogate", self.interrogateapi, methods=["POST"])
         self.add_api_route_auth("/sdapi/v1/interrupt", self.interruptapi, methods=["POST"])
         self.add_api_route_auth("/sdapi/v1/skip", self.skip, methods=["POST"])
@@ -165,30 +170,33 @@ class Api:
         self.add_api_route_auth("/sdapi/v1/options", self.set_config, methods=["POST"])
         self.add_api_route("/sdapi/v1/cmd-flags", self.get_cmd_flags, methods=["GET"], response_model=FlagsModel)
         self.add_api_route("/uptime", self.get_uptime, methods=["HEAD"])
-        self.add_api_route_auth("/sdapi/v1/samplers", self.get_samplers, methods=["GET"], response_model=List[SamplerItem])
+        self.add_api_route_auth("/sdapi/v1/samplers", self.get_samplers, methods=["GET"],
+                                response_model=List[SamplerItem])
         self.add_api_route_auth("/sdapi/v1/upscalers", self.get_upscalers, methods=["GET"],
-                           response_model=List[UpscalerItem])
-        self.add_api_route_auth("/sdapi/v1/sd-models", self.get_sd_models, methods=["GET"], response_model=List[SDModelItem])
+                                response_model=List[UpscalerItem])
+        self.add_api_route_auth("/sdapi/v1/sd-models", self.get_sd_models, methods=["GET"],
+                                response_model=List[SDModelItem])
         self.add_api_route_auth("/sdapi/v1/hypernetworks", self.get_hypernetworks, methods=["GET"],
-                           response_model=List[HypernetworkItem])
+                                response_model=List[HypernetworkItem])
         self.add_api_route_auth("/sdapi/v1/face-restorers", self.get_face_restorers, methods=["GET"],
-                           response_model=List[FaceRestorerItem])
+                                response_model=List[FaceRestorerItem])
         self.add_api_route_auth("/sdapi/v1/realesrgan-models", self.get_realesrgan_models, methods=["GET"],
-                           response_model=List[RealesrganItem])
+                                response_model=List[RealesrganItem])
         self.add_api_route_auth("/sdapi/v1/prompt-styles", self.get_prompt_styles, methods=["GET"],
-                           response_model=List[PromptStyleItem])
+                                response_model=List[PromptStyleItem])
         self.add_api_route_auth("/sdapi/v1/embeddings", self.get_embeddings, methods=["GET"],
-                           response_model=EmbeddingsResponse)
+                                response_model=EmbeddingsResponse)
         self.add_api_route_auth("/sdapi/v1/refresh-checkpoints", self.refresh_checkpoints, methods=["POST"])
         self.add_api_route_auth("/sdapi/v1/create/embedding", self.create_embedding, methods=["POST"],
-                           response_model=CreateResponse)
+                                response_model=CreateResponse)
         self.add_api_route_auth("/sdapi/v1/create/hypernetwork", self.create_hypernetwork, methods=["POST"],
-                           response_model=CreateResponse)
-        self.add_api_route_auth("/sdapi/v1/preprocess", self.preprocess, methods=["POST"], response_model=PreprocessResponse)
+                                response_model=CreateResponse)
+        self.add_api_route_auth("/sdapi/v1/preprocess", self.preprocess, methods=["POST"],
+                                response_model=PreprocessResponse)
         self.add_api_route_auth("/sdapi/v1/train/embedding", self.train_embedding, methods=["POST"],
-                           response_model=TrainResponse)
+                                response_model=TrainResponse)
         self.add_api_route_auth("/sdapi/v1/train/hypernetwork", self.train_hypernetwork, methods=["POST"],
-                           response_model=TrainResponse)
+                                response_model=TrainResponse)
         self.add_api_route_auth("/sdapi/v1/memory", self.get_memory, methods=["GET"], response_model=MemoryResponse)
 
         # Fetch the service account key JSON file contents
@@ -314,7 +322,7 @@ class Api:
             img2imgreq.mask = None
 
         # Asynchronously increment the user's usage count in Firestore by number of images processed
-        # self.increment_usage_count(img2imgreq.api_key, len(processed.images))
+        self.increment_generation_count(img2imgreq.api_key, len(processed.images))
 
         return ImageToImageResponse(images=b64images, parameters=vars(img2imgreq), info=processed.js())
 
@@ -592,7 +600,6 @@ class Api:
         # Return 200
         return Response(status_code=200)
 
-
     def get_memory(self):
         try:
             import os, psutil
@@ -632,4 +639,3 @@ class Api:
         self.app.include_router(self.router)
         print('Launching server on {server_name}:{port}'.format(server_name=server_name, port=port))
         uvicorn.run(self.app, host=server_name, port=port)
-
