@@ -155,7 +155,7 @@ class Api:
         self.add_api_route_auth("/sdapi/v1/txt2img", self.text2imgapi, methods=["POST"],
                                 response_model=TextToImageResponse)
         self.add_api_route_auth("/sdapi/v1/img2img", self.img2imgapi, methods=["POST"],
-                                response_model=ImageToImageResponse)
+                                response_model=ImageToImageResponse, route_class_override=TimedRoute)
         self.add_api_route_auth("/sdapi/v1/extra-single-image", self.extras_single_image_api, methods=["POST"],
                                 response_model=ExtrasSingleImageResponse)
         self.add_api_route_auth("/sdapi/v1/extra-batch-images", self.extras_batch_images_api, methods=["POST"],
