@@ -107,9 +107,22 @@ def encode_pil_to_base64(image):
 
 
 def api_middleware(app: FastAPI):
+    async def set_body(request: Request, body: bytes):
+        async def receive():
+            return {"type": "http.request", "body": body}
+
+        request._receive = receive
+
+    async def get_body(request: Request) -> bytes:
+        body = await request.body()
+        await set_body(request, body)
+        return body
+
     @app.middleware("http")
     async def log_and_time(req: Request, call_next):
         ts = time.time()
+        request_actual = get_body(req)
+        print(request_actual)
         res: Response = await call_next(req)
         duration = str(round(time.time() - ts, 4))
         res.headers["X-Process-Time"] = duration
