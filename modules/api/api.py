@@ -209,8 +209,8 @@ class Api:
     def add_api_route(self, path: str, endpoint, **kwargs):
         return self.app.add_api_route(path, endpoint, **kwargs)
 
-    def add_api_route_auth(self, path: str, endpoint, **kwargs):
-        return self.app.add_api_route(path, endpoint, dependencies=[Depends(self.auth)], **kwargs)
+    def add_api_route_auth(self, path: str, endpoint, route_class_override=None, **kwargs):
+        return self.app.add_api_route(path, endpoint, dependencies=[Depends(self.auth)], route_class_override=route_class_override, **kwargs)
 
     def auth(self, api_key: APIKey = Depends(APIKeyHeader(name="api_key", auto_error=False))):
         if api_key:
