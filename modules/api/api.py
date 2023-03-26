@@ -7,7 +7,7 @@ import uvicorn
 from threading import Lock
 from io import BytesIO
 from gradio.processing_utils import decode_base64_to_file
-from fastapi import APIRouter, Depends, FastAPI, HTTPException, Request, Response
+from fastapi import APIRouter, BackgroundTasks, Depends, FastAPI, HTTPException, Request, Response
 from fastapi.security.api_key import APIKeyHeader, APIKey
 from fastapi.routing import APIRoute
 
@@ -127,7 +127,6 @@ def api_middleware(app: FastAPI):
             ))
         return res
 
-
 class TimedRoute(APIRoute):
     def get_route_handler(self) -> Callable:
         original_route_handler = super().get_route_handler()
@@ -155,7 +154,7 @@ class Api:
         self.add_api_route_auth("/sdapi/v1/txt2img", self.text2imgapi, methods=["POST"],
                                 response_model=TextToImageResponse)
         self.add_api_route_auth("/sdapi/v1/img2img", self.img2imgapi, methods=["POST"],
-                                response_model=ImageToImageResponse, route_class_override=TimedRoute)
+                                response_model=ImageToImageResponse)
         self.add_api_route_auth("/sdapi/v1/extra-single-image", self.extras_single_image_api, methods=["POST"],
                                 response_model=ExtrasSingleImageResponse)
         self.add_api_route_auth("/sdapi/v1/extra-batch-images", self.extras_batch_images_api, methods=["POST"],
@@ -206,11 +205,11 @@ class Api:
 
         self.users_db = db.collection('customers')
 
-    def add_api_route(self, path: str, endpoint, route_class_override=None, **kwargs):
-        return self.app.add_api_route(path, endpoint, route_class_override, **kwargs)
+    def add_api_route(self, path: str, endpoint, **kwargs):
+        return self.app.add_api_route(path, endpoint, **kwargs)
 
-    def add_api_route_auth(self, path: str, endpoint, route_class_override=None, **kwargs):
-        return self.app.add_api_route(path, endpoint, dependencies=[Depends(self.auth)], route_class_override=route_class_override, **kwargs)
+    def add_api_route_auth(self, path: str, endpoint, **kwargs):
+        return self.app.add_api_route(path, endpoint, dependencies=[Depends(self.auth)], **kwargs)
 
     def auth(self, api_key: APIKey = Depends(APIKeyHeader(name="api_key", auto_error=False))):
         if api_key:
@@ -322,7 +321,7 @@ class Api:
             img2imgreq.mask = None
 
         # Asynchronously increment the user's usage count in Firestore by number of images processed
-        # self.increment_generation_count(img2imgreq.api_key, len(processed.images))
+        self.increment_generation_count(img2imgreq.api_key, len(processed.images))
 
         return ImageToImageResponse(images=b64images, parameters=vars(img2imgreq), info=processed.js())
 
