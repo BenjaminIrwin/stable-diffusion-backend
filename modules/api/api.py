@@ -141,7 +141,7 @@ class TimedRoute(APIRoute):
 
         async def custom_route_handler(request: Request) -> Response:
             before = time.time()
-            print(f"route request: {request}")
+            print(f"route request headers: {request.headers}")
             response: Response = await original_route_handler(request)
             duration = time.time() - before
             response.headers["X-Response-Time"] = str(duration)
@@ -159,8 +159,7 @@ class Api:
         self.app = app
         self.queue_lock = queue_lock
         api_middleware(self.app)
-        self.router.add_api_route("/sdapi/v1/img2img", self.img2imgapi, methods=["POST"],
-                                response_model=ImageToImageResponse, route_class_override=TimedRoute)
+        self.add_api_route_auth("/sdapi/v1/img2img", self.img2imgapi, methods=["POST"], response_model=ImageToImageResponse)
 
         # Fetch the service account key JSON file contents
         cred = credentials.Certificate(fs_sa_key)
@@ -169,11 +168,8 @@ class Api:
 
         self.users_db = db.collection('customers')
 
-    def add_api_route(self, path: str, endpoint, **kwargs):
-        return self.app.add_api_route(path, endpoint, **kwargs)
-
     def add_api_route_auth(self, path: str, endpoint, **kwargs):
-        return self.app.add_api_route(path, endpoint, dependencies=[Depends(self.auth)], **kwargs)
+        return self.router.add_api_route(path, endpoint, dependencies=[Depends(self.auth)], route_class_override=TimedRoute, **kwargs)
 
     def auth(self, api_key: APIKey = Depends(APIKeyHeader(name="api_key", auto_error=False))):
         if api_key:
