@@ -148,12 +148,11 @@ class AuthenticationRouter(APIRoute):
             user_ref = users_db.document(id)
             user_ref.update({"cur_generations": gfirestore.Increment(amount)})
 
-        def auth(request):
+        async def auth(request):
             api_key = request.headers['api_key']
-            print(f"api_key: {api_key}")
             if api_key:
                 # Query firebase firestore database with api_key
-                res = users_db.where('api_key', '==', api_key).get()
+                res = await users_db.where('api_key', '==', api_key).get()
                 if len(res) > 0:
                     user = res[0]
                     if user.get('cur_generations') >= user.get('generation_limit'):
@@ -168,12 +167,15 @@ class AuthenticationRouter(APIRoute):
         async def custom_route_handler(request: Request) -> Response:
             before = time.time()
             user = auth(request)
-            print(f"route request headers: {request.headers}")
             response: Response = await original_route_handler(request)
+            # Get response body
+            body = await response.body()
+            # Get number of images
+            num_images = len(body['images'])
             duration = time.time() - before
             response.headers["X-Response-Time"] = str(duration)
             if response.status_code == 200:
-                increment_generation_count(user.id, 1)
+                increment_generation_count(user.id, num_images)
             return response
 
         return custom_route_handler
