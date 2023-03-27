@@ -152,7 +152,7 @@ class AuthenticationRouter(APIRoute):
             api_key = request.headers['api_key']
             if api_key:
                 # Query firebase firestore database with api_key
-                res = await users_db.where('api_key', '==', api_key).get()
+                res = users_db.where('api_key', '==', api_key).get()
                 if len(res) > 0:
                     user = res[0]
                     if user.get('cur_generations') >= user.get('generation_limit'):
