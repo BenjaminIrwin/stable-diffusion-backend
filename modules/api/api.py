@@ -148,7 +148,7 @@ class AuthenticationRouter(APIRoute):
             user_ref = users_db.document(id)
             user_ref.update({"cur_generations": gfirestore.Increment(amount)})
 
-        async def auth(request):
+        def auth(request):
             api_key = request.headers['api_key']
             if api_key:
                 # Query firebase firestore database with api_key
@@ -166,7 +166,7 @@ class AuthenticationRouter(APIRoute):
 
         async def custom_route_handler(request: Request) -> Response:
             before = time.time()
-            user_id = await auth(request)
+            user_id = auth(request)
             response: Response = await original_route_handler(request)
             duration = time.time() - before
             response.headers["X-Response-Time"] = str(duration)
