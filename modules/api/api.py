@@ -169,9 +169,9 @@ class AuthenticationRouter(APIRoute):
             user = auth(request)
             response: Response = await original_route_handler(request)
             # Get response body
-            body = await response.body()
+            body = await request.body()
             # Get number of images
-            num_images = len(body['images'])
+            num_images = body['batch_size'] * body['num_iter']
             duration = time.time() - before
             response.headers["X-Response-Time"] = str(duration)
             if response.status_code == 200:
