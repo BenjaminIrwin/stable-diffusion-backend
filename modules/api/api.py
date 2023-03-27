@@ -157,7 +157,7 @@ class AuthenticationRouter(APIRoute):
                     user = res[0]
                     if user.get('cur_generations') >= user.get('generation_limit'):
                         raise HTTPException(status_code=429, detail="Max generations reached.")
-                    return user
+                    return user.get('id')
                 else:
                     raise HTTPException(status_code=404, detail="Incorrect api_key provided.")
             else:
@@ -166,7 +166,7 @@ class AuthenticationRouter(APIRoute):
 
         async def custom_route_handler(request: Request) -> Response:
             before = time.time()
-            user = auth(request)
+            user_id = auth(request)
             response: Response = await original_route_handler(request)
             duration = time.time() - before
             response.headers["X-Response-Time"] = str(duration)
@@ -175,8 +175,8 @@ class AuthenticationRouter(APIRoute):
                 body = await request.json()
                 # Get number of images
                 num_images = body['batch_size'] * body['n_iter']
-                print(f"User {user.id} generated {num_images} images in {duration} seconds.")
-                increment_generation_count(user.id, num_images)
+                print(f"User {user_id} generated {num_images} images in {duration} seconds.")
+                increment_generation_count(user_id, num_images)
             return response
 
         return custom_route_handler
