@@ -172,7 +172,7 @@ class AuthenticationRouter(APIRoute):
             response.headers["X-Response-Time"] = str(duration)
             if response.status_code == 200:
                 # Get response body
-                body = await request.body.decode()
+                body = await request.json()
                 # Get number of images
                 num_images = body['batch_size'] * body['num_iter']
                 increment_generation_count(user.id, num_images)
