@@ -1,3 +1,4 @@
+import asyncio
 import base64
 import io
 import random
@@ -163,6 +164,10 @@ class AuthenticationRouter(APIRoute):
             else:
                 raise HTTPException(status_code=401, detail="No api_key provided.")
 
+        async def log_generation_count(request: Request, user_id):
+            body = await request.json()
+            num_images = body['batch_size'] * body['n_iter']
+            increment_generation_count(user_id, num_images)
 
         async def custom_route_handler(request: Request) -> Response:
             before = time.time()
@@ -171,12 +176,7 @@ class AuthenticationRouter(APIRoute):
             duration = time.time() - before
             response.headers["X-Response-Time"] = str(duration)
             if response.status_code == 200:
-                # Get response body
-                body = await request.json()
-                # Get number of images
-                num_images = body['batch_size'] * body['n_iter']
-                print(f"User {user_id} generated {num_images} images in {duration} seconds.")
-                increment_generation_count(user_id, num_images)
+                asyncio.ensure_future(log_generation_count(request, user_id))
             return response
 
         return custom_route_handler
