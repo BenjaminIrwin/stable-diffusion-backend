@@ -174,7 +174,8 @@ class AuthenticationRouter(APIRoute):
                 # Get response body
                 body = await request.json()
                 # Get number of images
-                num_images = body['batch_size'] * body['num_iter']
+                num_images = body['batch_size'] * body['n_iter']
+                print(f"User {user.id} generated {num_images} images in {duration} seconds.")
                 increment_generation_count(user.id, num_images)
             return response
 
