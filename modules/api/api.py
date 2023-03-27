@@ -187,13 +187,6 @@ class Api:
         api_middleware(self.app)
         self.add_api_route_auth("/sdapi/v1/img2img", self.img2imgapi, methods=["POST"], response_model=ImageToImageResponse)
 
-        # Fetch the service account key JSON file contents
-        cred = credentials.Certificate(fs_sa_key)
-        app = firebase_admin.initialize_app(cred)
-        db = firestore.client()
-
-        self.users_db = db.collection('customers')
-
     def add_api_route_auth(self, path: str, endpoint, **kwargs):
         return self.router.add_api_route(path, endpoint, route_class_override=AuthenticationRouter, **kwargs)
 
