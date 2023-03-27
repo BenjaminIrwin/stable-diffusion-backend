@@ -157,7 +157,7 @@ class AuthenticationRouter(APIRoute):
                     user = res[0]
                     if user.get('cur_generations') >= user.get('generation_limit'):
                         raise HTTPException(status_code=429, detail="Max generations reached.")
-                    return user.get('id')
+                    return user.id
                 else:
                     raise HTTPException(status_code=404, detail="Incorrect api_key provided.")
             else:
