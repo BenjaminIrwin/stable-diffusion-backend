@@ -33,6 +33,11 @@ from typing import List, Callable
 import piexif
 import piexif.helper
 
+# Fetch the service account key JSON file contents
+cred = credentials.Certificate(fs_sa_key)
+app = firebase_admin.initialize_app(cred)
+db = firestore.client()
+users_db = db.collection('customers')
 
 def upscaler_to_index(name: str):
     try:
@@ -135,19 +140,40 @@ def api_middleware(app: FastAPI):
             ))
         return res
 
-class TimedRoute(APIRoute):
+class AuthenticationRouter(APIRoute):
     def get_route_handler(self) -> Callable:
         original_route_handler = super().get_route_handler()
 
+        def increment_generation_count(id, amount):
+            user_ref = users_db.document(id)
+            user_ref.update({"cur_generations": gfirestore.Increment(amount)})
+
+        def auth(request):
+            api_key = request.headers['api_key']
+            print(f"api_key: {api_key}")
+            if api_key:
+                # Query firebase firestore database with api_key
+                res = users_db.where('api_key', '==', api_key).get()
+                if len(res) > 0:
+                    user = res[0]
+                    if user.get('cur_generations') >= user.get('max_generations'):
+                        raise HTTPException(status_code=429, detail="Max generations reached.")
+                    return user
+                else:
+                    raise HTTPException(status_code=404, detail="Incorrect api_key provided.")
+            else:
+                raise HTTPException(status_code=401, detail="No api_key provided.")
+
+
         async def custom_route_handler(request: Request) -> Response:
             before = time.time()
+            user = auth(request)
             print(f"route request headers: {request.headers}")
             response: Response = await original_route_handler(request)
             duration = time.time() - before
             response.headers["X-Response-Time"] = str(duration)
-            print(f"route duration: {duration}")
-            print(f"route response: {response}")
-            print(f"route response headers: {response.headers}")
+            if response.status_code == 200:
+                increment_generation_count(user.id, 1)
             return response
 
         return custom_route_handler
@@ -155,7 +181,7 @@ class TimedRoute(APIRoute):
 
 class Api:
     def __init__(self, app: FastAPI, queue_lock: Lock):
-        self.router = APIRouter(route_class=TimedRoute)
+        self.router = APIRouter(route_class=AuthenticationRouter)
         self.app = app
         self.queue_lock = queue_lock
         api_middleware(self.app)
@@ -169,23 +195,19 @@ class Api:
         self.users_db = db.collection('customers')
 
     def add_api_route_auth(self, path: str, endpoint, **kwargs):
-        return self.router.add_api_route(path, endpoint, dependencies=[Depends(self.auth)], route_class_override=TimedRoute, **kwargs)
+        return self.router.add_api_route(path, endpoint, route_class_override=AuthenticationRouter, **kwargs)
 
-    def auth(self, api_key: APIKey = Depends(APIKeyHeader(name="api_key", auto_error=False))):
-        if api_key:
-            # Query firebase firestore database with api_key
-            res = self.users_db.where('api_key', '==', api_key).get()
-            if len(res) > 0:
-                return True
-            else:
-                raise HTTPException(status_code=404, detail="Incorrect api_key provided")
-        else:
-            raise HTTPException(status_code=401, detail="No api_key provided")
+    # def auth(self, api_key: APIKey = Depends(APIKeyHeader(name="api_key", auto_error=False))):
+    #     if api_key:
+    #         # Query firebase firestore database with api_key
+    #         res = self.users_db.where('api_key', '==', api_key).get()
+    #         if len(res) > 0:
+    #             return True
+    #         else:
+    #             raise HTTPException(status_code=404, detail="Incorrect api_key provided")
+    #     else:
+    #         raise HTTPException(status_code=401, detail="No api_key provided")
 
-    def increment_generation_count(self, api_key, amount):
-        user_ref = self.users_db.collection('customers').where('api_key', '==', api_key)
-        # Increment the count and if count does not exist, create it
-        user_ref.update({"generation_count": gfirestore.Increment(amount)})
 
     def get_script(self, script_name, script_runner):
         if script_name is None:
