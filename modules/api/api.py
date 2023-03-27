@@ -168,13 +168,13 @@ class AuthenticationRouter(APIRoute):
             before = time.time()
             user = auth(request)
             response: Response = await original_route_handler(request)
-            # Get response body
-            body = await request.body()
-            # Get number of images
-            num_images = body['batch_size'] * body['num_iter']
             duration = time.time() - before
             response.headers["X-Response-Time"] = str(duration)
             if response.status_code == 200:
+                # Get response body
+                body = await request.body.decode()
+                # Get number of images
+                num_images = body['batch_size'] * body['num_iter']
                 increment_generation_count(user.id, num_images)
             return response
 
