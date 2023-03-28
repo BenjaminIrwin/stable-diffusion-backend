@@ -164,10 +164,17 @@ class AuthenticationRouter(APIRoute):
             else:
                 raise HTTPException(status_code=401, detail="No api_key provided.")
 
-        async def log_generation_count(request: Request, user_id):
-            body = await request.json()
-            num_images = body['batch_size'] * body['n_iter']
+        async def log(request: Request, response: Response, user_id):
+            request_body = await request.json()
+            print('INIT IMAGES IN ROUTER: ')
+            print(request_body['init_images'])
+            print('INIT MASK IN ROUTER: ')
+            print(request_body['mask'])
+            print('Response body IN ROUTER:')
+            print(response.body)
+            num_images = request_body['batch_size'] * request_body['n_iter']
             increment_generation_count(user_id, num_images)
+            # log_images(user_id, input_image, input_mask, output_images)
 
         async def custom_route_handler(request: Request) -> Response:
             before = time.time()
@@ -176,7 +183,7 @@ class AuthenticationRouter(APIRoute):
             duration = time.time() - before
             response.headers["X-Response-Time"] = str(duration)
             if response.status_code == 200:
-                asyncio.ensure_future(log_generation_count(request, user_id))
+                asyncio.ensure_future(log(request, response, user_id))
             return response
 
         return custom_route_handler
