@@ -173,7 +173,7 @@ class AuthenticationRouter(APIRoute):
             log_images(user_id, request_body, response.body)
 
         def log_images(user_id, request_body, response_body):
-
+            print('logging images')
             # init_image = request_body['init_images'][0]
             # mask = request_body['mask']
             # output_images = response_body['images']
