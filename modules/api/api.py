@@ -172,9 +172,6 @@ class AuthenticationRouter(APIRoute):
         async def log(request: Request, response: Response, user_id):
             request_body = await request.json()
             log_increment_generation_count(user_id, request_body)
-            print(response.body)
-            print(type(response.body))
-            # Get json response
             response_body = json.loads(response.body)
             log_images(user_id, request_body, response_body)
 
@@ -276,8 +273,6 @@ class Api:
     def img2imgapi(self, img2imgreq: StableDiffusionImg2ImgProcessingAPI):
         init_images = img2imgreq.init_images
         img2imgreq.negative_prompt = negative_prompt
-        print('REMOVE BACKGROUND?')
-        print(img2imgreq.remove_bg)
         if init_images is None:
             raise HTTPException(status_code=404, detail="Init image not found")
 
