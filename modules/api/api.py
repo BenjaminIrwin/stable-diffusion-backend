@@ -16,6 +16,7 @@ import firebase_admin
 from firebase_admin import credentials, firestore
 from google.cloud import firestore as gfirestore
 from constants import *
+from modules.s3 import upload_base64_file, upload_base64_files
 from prompts import *
 
 import modules.shared as shared
@@ -173,23 +174,17 @@ class AuthenticationRouter(APIRoute):
             log_images(user_id, request_body, response.body)
 
         def log_images(user_id, request_body, response_body):
-            print('logging images')
-            # init_image = request_body['init_images'][0]
-            # mask = request_body['mask']
-            # output_images = response_body['images']
-            #
-            # # Get all other fields of request except init_images and mask
-            # request_body.pop('init_images')
-            # request_body.pop('mask')
-
-            # On firestore, create a new document in the requests collection with the following fields:
-            # user_id, init_image, mask, request_body, output_images, timestamp
+            init_image = upload_base64_file(request_body['init_images'][0])
+            mask = upload_base64_file(request_body['mask'])
+            output_images = upload_base64_files(response_body['images'])
+            request_body.pop('init_images')
+            request_body.pop('mask')
             requests_db.add({
                 'user_id': user_id,
-                'init_image': 'test',
-                'mask': 'test',
-                'request_body': 'test',
-                'output_images': 'test',
+                'params': request_body,
+                'init_image': init_image,
+                'mask': mask,
+                'output_images': output_images,
                 'timestamp': gfirestore.SERVER_TIMESTAMP
             })
 

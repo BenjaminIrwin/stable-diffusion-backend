@@ -9,6 +9,7 @@ import six
 
 from constants import aws_access_key_id, aws_secret_access_key
 
+
 def get_file_extension(file_name, decoded_file):
     extension = imghdr.what(file_name, decoded_file)
     extension = "jpg" if extension == "jpeg" else extension
@@ -34,6 +35,26 @@ def decode_base64_file(data):
         complete_file_name = "%s.%s" % (file_name, file_extension,)
 
         return io.BytesIO(decoded_file), complete_file_name
+
+
+def upload_base64_files(base64_files):
+    bucket_name = 'lightsketch-bucket'
+    client = boto3.client('s3', aws_access_key_id=aws_access_key_id,
+                          aws_secret_access_key=aws_secret_access_key)
+
+    urls = []
+
+    for base64_file in base64_files:
+        file, file_name = decode_base64_file(base64_file)
+
+        client.upload_fileobj(
+            file,
+            bucket_name,
+            file_name
+        )
+        urls.append(f"https://{bucket_name}.s3.amazonaws.com/{file_name}")
+
+    return urls
 
 
 def upload_base64_file(base64_file):
