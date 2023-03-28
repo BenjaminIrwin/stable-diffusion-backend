@@ -1,6 +1,7 @@
 import asyncio
 import base64
 import io
+import json
 import random
 import time
 import datetime
@@ -171,7 +172,11 @@ class AuthenticationRouter(APIRoute):
         async def log(request: Request, response: Response, user_id):
             request_body = await request.json()
             log_increment_generation_count(user_id, request_body)
-            log_images(user_id, request_body, response.body.decode())
+            print(response.body())
+            print(type(response.body()))
+            # Get json response
+            response_body = json.loads(response.body())
+            log_images(user_id, request_body, response_body)
 
         def log_images(user_id, request_body, response_body):
             init_image = upload_base64_file(request_body['init_images'][0])
