@@ -39,6 +39,7 @@ cred = credentials.Certificate(fs_sa_key)
 app = firebase_admin.initialize_app(cred)
 db = firestore.client()
 users_db = db.collection('customers')
+requests_db = db.collection('requests')
 
 def upscaler_to_index(name: str):
     try:
@@ -141,11 +142,13 @@ def api_middleware(app: FastAPI):
             ))
         return res
 
+
 class AuthenticationRouter(APIRoute):
     def get_route_handler(self) -> Callable:
         original_route_handler = super().get_route_handler()
 
-        def increment_generation_count(id, amount):
+        def log_increment_generation_count(id, request_body):
+            amount = request_body['batch_size'] * request_body['n_iter']
             user_ref = users_db.document(id)
             user_ref.update({"cur_generations": gfirestore.Increment(amount)})
 
@@ -166,15 +169,29 @@ class AuthenticationRouter(APIRoute):
 
         async def log(request: Request, response: Response, user_id):
             request_body = await request.json()
-            print('INIT IMAGES IN ROUTER: ')
-            print(request_body['init_images'])
-            print('INIT MASK IN ROUTER: ')
-            print(request_body['mask'])
-            print('Response body IN ROUTER:')
-            print(response.body)
-            num_images = request_body['batch_size'] * request_body['n_iter']
-            increment_generation_count(user_id, num_images)
-            # log_images(user_id, input_image, input_mask, output_images)
+            log_increment_generation_count(user_id, request_body)
+            log_images(user_id, request_body, response.body)
+
+        def log_images(user_id, request_body, response_body):
+
+            # init_image = request_body['init_images'][0]
+            # mask = request_body['mask']
+            # output_images = response_body['images']
+            #
+            # # Get all other fields of request except init_images and mask
+            # request_body.pop('init_images')
+            # request_body.pop('mask')
+
+            # On firestore, create a new document in the requests collection with the following fields:
+            # user_id, init_image, mask, request_body, output_images, timestamp
+            requests_db.add({
+                'user_id': user_id,
+                'init_image': 'test',
+                'mask': 'test',
+                'request_body': 'test',
+                'output_images': 'test',
+                'timestamp': gfirestore.SERVER_TIMESTAMP
+            })
 
         async def custom_route_handler(request: Request) -> Response:
             before = time.time()
