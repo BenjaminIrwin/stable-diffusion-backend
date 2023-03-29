@@ -197,6 +197,7 @@ class AuthenticationRouter(APIRoute):
             })
 
         async def custom_route_handler(request: Request) -> Response:
+            print('INSIDE ROUTE HANDLER')
             before = time.time()
             user_id = auth(request)
             response: Response = await original_route_handler(request)
@@ -212,15 +213,14 @@ class AuthenticationRouter(APIRoute):
 class Api:
     def __init__(self, app: FastAPI, queue_lock: Lock):
         self.router = APIRouter(route_class=AuthenticationRouter)
-        rollbar_add_to(self.router)
+        # rollbar_add_to(self.router)
         self.app = app
         self.queue_lock = queue_lock
         api_middleware(self.app)
         self.add_api_route_auth("/sdapi/v1/img2img", self.img2imgapi, methods=["POST"], response_model=ImageToImageResponse)
 
     def add_api_route_auth(self, path: str, endpoint, **kwargs):
-        self.router.add_api_route(path, endpoint, route_class_override=AuthenticationRouter, **kwargs)
-        rollbar_add_to(self.router)
+        self.router.add_api_route(path, endpoint, **kwargs)
 
     def get_script(self, script_name, script_runner):
         if script_name is None:
