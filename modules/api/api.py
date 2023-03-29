@@ -213,7 +213,7 @@ class AuthenticationRouter(APIRoute):
 class Api:
     def __init__(self, app: FastAPI, queue_lock: Lock):
         self.router = APIRouter(route_class=AuthenticationRouter)
-        # rollbar_add_to(self.router)
+        rollbar_add_to(self.router)
         self.app = app
         self.queue_lock = queue_lock
         api_middleware(self.app)
