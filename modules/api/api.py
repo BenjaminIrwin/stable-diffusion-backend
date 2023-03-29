@@ -36,6 +36,12 @@ from typing import List, Callable
 import piexif
 import piexif.helper
 
+import rollbar
+from rollbar.contrib.fastapi import add_to as rollbar_add_to
+
+rollbar.init('3b384e6fb39c443c879eb60ab96f17b7', handler='async', environment='production')
+
+
 # Fetch the service account key JSON file contents
 cred = credentials.Certificate(fs_sa_key)
 app = firebase_admin.initialize_app(cred)
@@ -206,6 +212,7 @@ class AuthenticationRouter(APIRoute):
 class Api:
     def __init__(self, app: FastAPI, queue_lock: Lock):
         self.router = APIRouter(route_class=AuthenticationRouter)
+        rollbar_add_to(self.router)
         self.app = app
         self.queue_lock = queue_lock
         api_middleware(self.app)
