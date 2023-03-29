@@ -197,7 +197,6 @@ class AuthenticationRouter(APIRoute):
             })
 
         async def custom_route_handler(request: Request) -> Response:
-            print('INSIDE ROUTER!')
             before = time.time()
             user_id = auth(request)
             response: Response = await original_route_handler(request)
@@ -220,19 +219,8 @@ class Api:
         self.add_api_route_auth("/sdapi/v1/img2img", self.img2imgapi, methods=["POST"], response_model=ImageToImageResponse)
 
     def add_api_route_auth(self, path: str, endpoint, **kwargs):
-        return self.router.add_api_route(path, endpoint, **kwargs)
-
-    # def auth(self, api_key: APIKey = Depends(APIKeyHeader(name="api_key", auto_error=False))):
-    #     if api_key:
-    #         # Query firebase firestore database with api_key
-    #         res = self.users_db.where('api_key', '==', api_key).get()
-    #         if len(res) > 0:
-    #             return True
-    #         else:
-    #             raise HTTPException(status_code=404, detail="Incorrect api_key provided")
-    #     else:
-    #         raise HTTPException(status_code=401, detail="No api_key provided")
-
+        self.router.add_api_route(path, endpoint, route_class_override=AuthenticationRouter, **kwargs)
+        rollbar_add_to(self.router)
 
     def get_script(self, script_name, script_runner):
         if script_name is None:
