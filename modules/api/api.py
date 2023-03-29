@@ -36,11 +36,12 @@ from typing import List, Callable
 import piexif
 import piexif.helper
 
-import rollbar
-from rollbar.contrib.fastapi import add_to as rollbar_add_to
+import sentry_sdk
 
-rollbar.init('3b384e6fb39c443c879eb60ab96f17b7', handler='async', environment='production')
-
+sentry_sdk.init(
+    dsn="https://db21fe40066142b093719b3e9a7d57f6@o4504922099089408.ingest.sentry.io/4504922100465669",
+    traces_sample_rate=1.0,
+)
 
 # Fetch the service account key JSON file contents
 cred = credentials.Certificate(fs_sa_key)
@@ -197,7 +198,6 @@ class AuthenticationRouter(APIRoute):
             })
 
         async def custom_route_handler(request: Request) -> Response:
-            print('INSIDE ROUTE HANDLER')
             before = time.time()
             user_id = auth(request)
             response: Response = await original_route_handler(request)
@@ -213,7 +213,6 @@ class AuthenticationRouter(APIRoute):
 class Api:
     def __init__(self, app: FastAPI, queue_lock: Lock):
         self.router = APIRouter(route_class=AuthenticationRouter)
-        rollbar_add_to(self.router)
         self.app = app
         self.queue_lock = queue_lock
         api_middleware(self.app)
