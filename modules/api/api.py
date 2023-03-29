@@ -197,6 +197,7 @@ class AuthenticationRouter(APIRoute):
             })
 
         async def custom_route_handler(request: Request) -> Response:
+            print('INSIDE ROUTER!')
             before = time.time()
             user_id = auth(request)
             response: Response = await original_route_handler(request)
@@ -219,7 +220,7 @@ class Api:
         self.add_api_route_auth("/sdapi/v1/img2img", self.img2imgapi, methods=["POST"], response_model=ImageToImageResponse)
 
     def add_api_route_auth(self, path: str, endpoint, **kwargs):
-        return self.router.add_api_route(path, endpoint, route_class_override=AuthenticationRouter, **kwargs)
+        return self.router.add_api_route(path, endpoint, **kwargs)
 
     # def auth(self, api_key: APIKey = Depends(APIKeyHeader(name="api_key", auto_error=False))):
     #     if api_key:
