@@ -198,6 +198,7 @@ class AuthenticationRouter(APIRoute):
             })
 
         async def custom_route_handler(request: Request) -> Response:
+            print(request.headers)
             before = time.time()
             user_id = auth(request)
             response: Response = await original_route_handler(request)
