@@ -13,6 +13,9 @@ from fastapi import APIRouter, BackgroundTasks, Depends, FastAPI, HTTPException,
 from fastapi.security.api_key import APIKeyHeader, APIKey
 from fastapi.routing import APIRoute
 
+from modules.rembg.rembg.bg import remove
+from modules.rembg.rembg.session_factory import new_session
+
 import firebase_admin
 from firebase_admin import credentials, firestore
 from google.cloud import firestore as gfirestore
@@ -217,21 +220,10 @@ class Api:
         self.queue_lock = queue_lock
         api_middleware(self.app)
         self.add_api_route_auth("/sdapi/v1/img2img", self.img2imgapi, methods=["POST"], response_model=ImageToImageResponse)
+        self.add_api_route_auth("/sdapi/v1/rembg", self.rembgapi, methods=["POST"], response_model=ImageToImageResponse)
 
     def add_api_route_auth(self, path: str, endpoint, **kwargs):
         return self.router.add_api_route(path, endpoint, route_class_override=AuthenticationRouter, **kwargs)
-
-    # def auth(self, api_key: APIKey = Depends(APIKeyHeader(name="api_key", auto_error=False))):
-    #     if api_key:
-    #         # Query firebase firestore database with api_key
-    #         res = self.users_db.where('api_key', '==', api_key).get()
-    #         if len(res) > 0:
-    #             return True
-    #         else:
-    #             raise HTTPException(status_code=404, detail="Incorrect api_key provided")
-    #     else:
-    #         raise HTTPException(status_code=401, detail="No api_key provided")
-
 
     def get_script(self, script_name, script_runner):
         if script_name is None:
@@ -276,6 +268,19 @@ class Api:
         b64images = list(map(encode_pil_to_base64, processed.images))
 
         return TextToImageResponse(images=b64images, parameters=vars(txt2imgreq), info=processed.js())
+
+    def rembgapi(self, rembgreq):
+        init_images = rembgreq.init_images
+        if init_images is None:
+            raise HTTPException(status_code=404, detail="Init image not found")
+
+        output_images = []
+
+        for img in init_images:
+            no_bg_img = remove(img, session=new_session('u2net_human_seg'))
+            output_images.append(encode_pil_to_base64(no_bg_img))
+
+        return ImageToImageResponse(images=output_images, parameters=vars(rembgreq))
 
     def img2imgapi(self, img2imgreq: StableDiffusionImg2ImgProcessingAPI):
         init_images = img2imgreq.init_images
