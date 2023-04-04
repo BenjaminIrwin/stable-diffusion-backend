@@ -223,7 +223,7 @@ class Api:
         api_middleware(self.app)
         self.add_api_route_auth("/sdapi/v1/img2img", self.img2imgapi, methods=["POST"], response_model=ImageToImageResponse)
         self.add_api_route_auth("/sdapi/v1/rembg", self.rembgapi, methods=["POST"], response_model=ImageToImageResponse)
-        self.add_api_route_auth("/test/action_word_present", self.actionapi, methods=["POST"], response_model=Response)
+        self.add_api_route_auth("/test/action_word_present", self.actionapi, methods=["POST"])
 
     def add_api_route_auth(self, path: str, endpoint, **kwargs):
         return self.router.add_api_route(path, endpoint, route_class_override=AuthenticationRouter, **kwargs)
