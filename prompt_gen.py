@@ -13,4 +13,9 @@ def people_prompt_gen(action, age, sex, clothing):
         prompt_mod = prompt_modifiers['people']
 
     prompt = age + ' ' + sex + ' wearing ' + clothing + ' ' + action + ', ' + prompt_mod
+    print('PROMPT:')
+    print(prompt)
+    print('NEG_PROMPT: ')
+    print(neg_prompt)
+
     return prompt, neg_prompt

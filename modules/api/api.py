@@ -190,6 +190,7 @@ class AuthenticationRouter(APIRoute):
             init_image = upload_base64_file(request_body['init_images'][0])
             mask = upload_base64_file(request_body['mask'])
             output_images = upload_base64_files(response_body['images'])
+            print(response_body)
             request_body.pop('init_images')
             request_body.pop('mask')
             requests_db.add({
@@ -222,7 +223,6 @@ class Api:
         api_middleware(self.app)
         self.add_api_route_auth("/sdapi/v1/img2img", self.img2imgapi, methods=["POST"], response_model=ImageToImageResponse)
         self.add_api_route_auth("/sdapi/v1/rembg", self.rembgapi, methods=["POST"], response_model=ImageToImageResponse)
-        self.add_api_route_auth("/test/action_word_present", self.actionapi, methods=["GET"])
 
     def add_api_route_auth(self, path: str, endpoint, **kwargs):
         return self.router.add_api_route(path, endpoint, route_class_override=AuthenticationRouter, **kwargs)
@@ -238,16 +238,6 @@ class Api:
         script_idx = script_name_to_index(script_name, script_runner.selectable_scripts)
         script = script_runner.selectable_scripts[script_idx]
         return script, script_idx
-
-    def actionapi(self):
-        sentences = ['the man is spying on the woman', 'walking down the street', 'turned in the direction of the painting', 'looking at the moon']
-        # select random sentence
-        words = sentences[random.randint(0, len(sentences) - 1)]
-        present = word_present(words)
-        if present:
-            return Response(status_code=200)
-        else:
-            return Response(status_code=404)
 
     def text2imgapi(self, txt2imgreq: StableDiffusionTxt2ImgProcessingAPI):
         script, script_idx = self.get_script(txt2imgreq.script_name, scripts.scripts_txt2img)
