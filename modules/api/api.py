@@ -190,12 +190,9 @@ class AuthenticationRouter(APIRoute):
             init_image = upload_base64_file(request_body['init_images'][0])
             mask = upload_base64_file(request_body['mask'])
             output_images = upload_base64_files(response_body['images'])
-            print(response_body)
-            request_body.pop('init_images')
-            request_body.pop('mask')
             requests_db.add({
                 'user_id': user_id,
-                'params': request_body,
+                'params': response_body['parameters'],
                 'init_image': init_image,
                 'mask': mask,
                 'output_images': output_images,
