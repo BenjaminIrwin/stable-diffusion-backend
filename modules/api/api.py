@@ -22,7 +22,7 @@ from google.cloud import firestore as gfirestore
 from constants import *
 from modules.s3 import upload_base64_file, upload_base64_files
 from prompts import *
-from prompt_gen import word_present
+from prompt_gen import people_prompt_gen
 
 import modules.shared as shared
 from modules import sd_samplers, deepbooru, sd_hijack, images, scripts, ui, postprocessing
@@ -296,7 +296,9 @@ class Api:
 
     def img2imgapi(self, img2imgreq: StableDiffusionImg2ImgProcessingAPI):
         init_images = img2imgreq.init_images
+        prompt, negative_prompt = people_prompt_gen(img2imgreq.action, img2imgreq.age, img2imgreq.sex, img2imgreq.clothing)
         img2imgreq.negative_prompt = negative_prompt
+        img2imgreq.prompt = prompt
         if init_images is None:
             raise HTTPException(status_code=404, detail="Init image not found")
 
