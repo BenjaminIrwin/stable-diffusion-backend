@@ -242,7 +242,7 @@ class Api:
     def actionapi(self):
         sentences = ['the man is spying on the woman', 'walking down the street', 'turned in the direction of the painting', 'looking at the moon']
         # select random sentence
-        words = sentences[random.randint(0, len(sentences) - 1)].split()
+        words = sentences[random.randint(0, len(sentences) - 1)]
         present = word_present(words)
         if present:
             return Response(status_code=200)
