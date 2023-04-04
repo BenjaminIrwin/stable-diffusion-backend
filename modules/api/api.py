@@ -203,13 +203,12 @@ class AuthenticationRouter(APIRoute):
 
         async def custom_route_handler(request: Request) -> Response:
             before = time.time()
-            if request.scope['path'] == '/sdapi/v1/img2img':
-                user_id = auth(request)
-                response: Response = await original_route_handler(request)
-                duration = time.time() - before
-                response.headers["X-Response-Time"] = str(duration)
-                if response.status_code == 200:
-                    asyncio.ensure_future(log(request, response, user_id))
+            user_id = auth(request)
+            response: Response = await original_route_handler(request)
+            duration = time.time() - before
+            response.headers["X-Response-Time"] = str(duration)
+            if response.status_code == 200 and request.scope['path'] == '/sdapi/v1/img2img':
+                asyncio.ensure_future(log(request, response, user_id))
             return response
 
         return custom_route_handler
