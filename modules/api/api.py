@@ -222,7 +222,7 @@ class Api:
         api_middleware(self.app)
         self.add_api_route_auth("/sdapi/v1/img2img", self.img2imgapi, methods=["POST"], response_model=ImageToImageResponse)
         self.add_api_route_auth("/sdapi/v1/rembg", self.rembgapi, methods=["POST"], response_model=ImageToImageResponse)
-        self.add_api_route_auth("/test/action_word_present", self.actionapi, methods=["POST"])
+        self.add_api_route_auth("/test/action_word_present", self.actionapi, methods=["GET"])
 
     def add_api_route_auth(self, path: str, endpoint, **kwargs):
         return self.router.add_api_route(path, endpoint, route_class_override=AuthenticationRouter, **kwargs)
@@ -239,8 +239,10 @@ class Api:
         script = script_runner.selectable_scripts[script_idx]
         return script, script_idx
 
-    def actionapi(self, request):
-        words = request['words']
+    def actionapi(self):
+        sentences = ['the man is spying on the woman', 'walking down the street', 'turned in the direction of the painting', 'looking at the moon']
+        # select random sentence
+        words = sentences[random.randint(0, len(sentences) - 1)].split()
         present = word_present(words)
         if present:
             return Response(status_code=200)
