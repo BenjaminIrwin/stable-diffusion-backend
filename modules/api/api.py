@@ -203,12 +203,13 @@ class AuthenticationRouter(APIRoute):
 
         async def custom_route_handler(request: Request) -> Response:
             before = time.time()
-            user_id = auth(request)
-            response: Response = await original_route_handler(request)
-            duration = time.time() - before
-            response.headers["X-Response-Time"] = str(duration)
-            if response.status_code == 200:
-                asyncio.ensure_future(log(request, response, user_id))
+            if request.scope['path'] == '/sdapi/v1/img2img':
+                user_id = auth(request)
+                response: Response = await original_route_handler(request)
+                duration = time.time() - before
+                response.headers["X-Response-Time"] = str(duration)
+                if response.status_code == 200:
+                    asyncio.ensure_future(log(request, response, user_id))
             return response
 
         return custom_route_handler
@@ -222,7 +223,7 @@ class Api:
         api_middleware(self.app)
         self.add_api_route_auth("/sdapi/v1/img2img", self.img2imgapi, methods=["POST"], response_model=ImageToImageResponse)
         self.add_api_route_auth("/sdapi/v1/rembg", self.rembgapi, methods=["POST"], response_model=ImageToImageResponse)
-        self.add_api_route_auth("/sdapi/v1/action_word_present", self.actionapi, methods=["POST"], response_model=Response)
+        self.add_api_route_auth("/test/action_word_present", self.actionapi, methods=["POST"], response_model=Response)
 
     def add_api_route_auth(self, path: str, endpoint, **kwargs):
         return self.router.add_api_route(path, endpoint, route_class_override=AuthenticationRouter, **kwargs)
