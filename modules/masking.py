@@ -1,5 +1,5 @@
 from PIL import Image, ImageFilter, ImageOps
-import numpy as np
+
 
 def get_crop_region(mask, pad_percentage=0.069):
     """finds a rectangular region that contains all masked ares in an image. Returns (x1, y1, x2, y2) coordinates of the rectangle.
@@ -105,10 +105,3 @@ def fill(image, mask):
 
     return image_mod.convert("RGB")
 
-image_mask = Image.open('/Users/TheBirwinator/Desktop/download-3.png')
-mask = image_mask.convert('L')
-crop_region = get_crop_region(np.array(mask))
-crop_region = expand_crop_region(crop_region, 512, 512, mask.width, mask.height)
-x1, y1, x2, y2 = crop_region
-mask = mask.crop(crop_region)
-mask.save('/Users/TheBirwinator/Desktop/mask_auto_out.png')
