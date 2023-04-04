@@ -22,6 +22,7 @@ from google.cloud import firestore as gfirestore
 from constants import *
 from modules.s3 import upload_base64_file, upload_base64_files
 from prompts import *
+from prompt_gen import word_present
 
 import modules.shared as shared
 from modules import sd_samplers, deepbooru, sd_hijack, images, scripts, ui, postprocessing
@@ -221,6 +222,7 @@ class Api:
         api_middleware(self.app)
         self.add_api_route_auth("/sdapi/v1/img2img", self.img2imgapi, methods=["POST"], response_model=ImageToImageResponse)
         self.add_api_route_auth("/sdapi/v1/rembg", self.rembgapi, methods=["POST"], response_model=ImageToImageResponse)
+        self.add_api_route_auth("/sdapi/v1/action_word_present", self.actionapi, methods=["POST"], response_model=Response)
 
     def add_api_route_auth(self, path: str, endpoint, **kwargs):
         return self.router.add_api_route(path, endpoint, route_class_override=AuthenticationRouter, **kwargs)
@@ -236,6 +238,14 @@ class Api:
         script_idx = script_name_to_index(script_name, script_runner.selectable_scripts)
         script = script_runner.selectable_scripts[script_idx]
         return script, script_idx
+
+    def actionapi(self, request):
+        words = request['words']
+        present = word_present(words)
+        if present:
+            return Response(status_code=200)
+        else:
+            return Response(status_code=404)
 
     def text2imgapi(self, txt2imgreq: StableDiffusionTxt2ImgProcessingAPI):
         script, script_idx = self.get_script(txt2imgreq.script_name, scripts.scripts_txt2img)
