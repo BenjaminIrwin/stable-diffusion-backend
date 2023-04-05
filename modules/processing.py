@@ -674,7 +674,8 @@ def process_images_inner(p: StableDiffusionProcessing) -> Processed:
 
 
                 # If p has remove_bg and it's true
-                if hasattr(p, 'remove_bg') and p.remove_bg:
+                remove_bg = hasattr(p, 'remove_bg') and p.remove_bg
+                if remove_bg:
                     no_bg_img = image
                     if p.color_corrections is not None and i < len(p.color_corrections):
                         if opts.save and not p.do_not_save_samples and opts.save_images_before_color_correction:
@@ -708,7 +709,7 @@ def process_images_inner(p: StableDiffusionProcessing) -> Processed:
                 if opts.enable_pnginfo:
                     image.info["parameters"] = text
                 output_images.append(image)
-                if no_bg_img:
+                if remove_bg:
                     output_images.append(no_bg_img)
 
             del x_samples_ddim
