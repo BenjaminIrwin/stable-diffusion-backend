@@ -1,7 +1,0 @@
-Cannot import xformers
-Traceback (most recent call last):
-  File "/home/ec2-user/stable-diffusion-backend/modules/sd_hijack_optimizations.py", line 20, in <module>
-    import xformers.ops
-ModuleNotFoundError: No module named 'xformers'
-
-WARNING:  Invalid HTTP request received.

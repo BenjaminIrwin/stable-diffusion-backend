@@ -181,17 +181,19 @@ class AuthenticationRouter(APIRoute):
                 raise HTTPException(status_code=401, detail="No api_key provided.")
 
         async def log(request: Request, response: Response, user_id):
+            task = request.scope.get('path', 'err').split('/')[-1]
             request_body = await request.json()
             log_increment_generation_count(user_id, request_body)
             response_body = json.loads(response.body)
-            log_images(user_id, request_body, response_body)
+            log_images(user_id, task, request_body, response_body)
 
-        def log_images(user_id, request_body, response_body):
+        def log_images(user_id, task, request_body, response_body):
             init_image = upload_base64_file(request_body['init_images'][0])
             mask = upload_base64_file(request_body['mask'])
             output_images = upload_base64_files(response_body['images'])
             requests_db.add({
                 'user_id': user_id,
+                'task': task,
                 'params': response_body['parameters'],
                 'init_image': init_image,
                 'mask': mask,
@@ -205,7 +207,8 @@ class AuthenticationRouter(APIRoute):
             response: Response = await original_route_handler(request)
             duration = time.time() - before
             response.headers["X-Response-Time"] = str(duration)
-            if response.status_code == 200 and request.scope['path'] == '/sdapi/v1/img2img':
+            # if 200 and path begins with 'sdapi'
+            if response.status_code == 200 and request.scope.get('path', 'err').startswith('/sdapi'):
                 asyncio.ensure_future(log(request, response, user_id))
             return response
 
@@ -218,7 +221,7 @@ class Api:
         self.app = app
         self.queue_lock = queue_lock
         api_middleware(self.app)
-        self.add_api_route_auth("/sdapi/v1/img2img", self.img2imgapi, methods=["POST"], response_model=ImageToImageResponse)
+        self.add_api_route_auth("/sdapi/v1/person", self.img2imgapi, methods=["POST"], response_model=ImageToImageResponse)
         self.add_api_route_auth("/sdapi/v1/rembg", self.rembgapi, methods=["POST"], response_model=ImageToImageResponse)
 
     def add_api_route_auth(self, path: str, endpoint, **kwargs):
