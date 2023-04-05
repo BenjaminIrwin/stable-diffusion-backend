@@ -1,4 +1,5 @@
 import base64
+import io
 import json
 import math
 import os
@@ -942,6 +943,8 @@ class RembgProcessing():
         output_images = []
 
         for img in self.init_images:
+            # Convert b64 string to PIL image
+            img = Image.open(io.BytesIO(base64.b64decode(img)))
             no_bg_img = remove(img, session=new_session('u2net_human_seg'))
             output_images.append(no_bg_img)
 
