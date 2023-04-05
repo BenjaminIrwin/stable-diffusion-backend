@@ -3,7 +3,7 @@ from pydantic import BaseModel, Field, create_model
 from typing import Any, Optional
 from typing_extensions import Literal
 from inflection import underscore
-from modules.processing import StableDiffusionProcessingTxt2Img, StableDiffusionProcessingImg2Img
+from modules.processing import StableDiffusionProcessingTxt2Img, StableDiffusionProcessingImg2Img, RembgProcessing
 from modules.shared import sd_upscalers, opts, parser
 from typing import Dict, List
 
@@ -107,6 +107,12 @@ StableDiffusionImg2ImgProcessingAPI = PydanticModelGenerator(
     "StableDiffusionProcessingImg2Img",
     StableDiffusionProcessingImg2Img,
     [{"key": "sampler_index", "type": str, "default": "Euler"}, {"key": "action", "type": str, "default": "walking"}, {"key": "sex", "type": str, "default": "female"}, {"key": "age", "type": str, "default": "young"}, {"key": "clothing", "type": str, "default": "suit"}, {"key": "init_images", "type": list, "default": None}, {"key": "denoising_strength", "type": float, "default": 0.75}, {"key": "mask", "type": str, "default": None}, {"key": "include_init_images", "type": bool, "default": False, "exclude" : True}, {"key": "remove_bg", "type": bool, "default": False}, {"key": "script_name", "type": str, "default": None}, {"key": "script_args", "type": list, "default": []}]
+).generate_model()
+
+RembgProcessingAPI = PydanticModelGenerator(
+    "RembgProcessing",
+    RembgProcessing,
+    [{"key": "init_images", "type": [], "default": None}]
 ).generate_model()
 
 class TextToImageResponse(BaseModel):

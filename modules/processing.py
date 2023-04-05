@@ -931,6 +931,23 @@ class StableDiffusionProcessingTxt2Img(StableDiffusionProcessing):
         return samples
 
 
+class RembgProcessing():
+
+    def __init__(self, init_images: list = None):
+        super().__init__()
+        self.init_images = init_images
+
+
+    def process(self):
+        output_images = []
+
+        for img in self.init_images:
+            no_bg_img = remove(img, session=new_session('u2net_human_seg'))
+            output_images.append(no_bg_img)
+
+        return output_images
+
+
 class StableDiffusionProcessingImg2Img(StableDiffusionProcessing):
     sampler = None
 

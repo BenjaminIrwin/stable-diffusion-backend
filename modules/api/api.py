@@ -27,7 +27,8 @@ from prompt_gen import people_prompt_gen
 import modules.shared as shared
 from modules import sd_samplers, deepbooru, sd_hijack, images, scripts, ui, postprocessing
 from modules.api.models import *
-from modules.processing import StableDiffusionProcessingTxt2Img, StableDiffusionProcessingImg2Img, process_images
+from modules.processing import StableDiffusionProcessingTxt2Img, StableDiffusionProcessingImg2Img, process_images, \
+    RembgProcessing
 from modules.textual_inversion.textual_inversion import create_embedding, train_embedding
 from modules.textual_inversion.preprocess import preprocess
 from modules.hypernetworks.hypernetwork import create_hypernetwork, train_hypernetwork
@@ -271,16 +272,16 @@ class Api:
 
         return TextToImageResponse(images=b64images, parameters=vars(txt2imgreq), info=processed.js())
 
-    def rembgapi(self, rembgreq):
+    def rembgapi(self, rembgreq: RembgProcessingAPI):
         init_images = rembgreq.init_images
         if init_images is None:
             raise HTTPException(status_code=404, detail="Init image not found")
 
-        output_images = []
+        with self.queue_lock:
+            p = RembgProcessing(init_images)
+            processed = p.process()
 
-        for img in init_images:
-            no_bg_img = remove(img, session=new_session('u2net_human_seg'))
-            output_images.append(encode_pil_to_base64(no_bg_img))
+        output_images = list(map(encode_pil_to_base64, processed))
 
         return ImageToImageResponse(images=output_images, parameters=vars(rembgreq))
 
