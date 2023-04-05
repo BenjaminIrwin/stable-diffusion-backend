@@ -112,7 +112,7 @@ StableDiffusionImg2ImgProcessingAPI = PydanticModelGenerator(
 RembgProcessingAPI = PydanticModelGenerator(
     "RembgProcessing",
     RembgProcessing,
-    [{"key": "init_images", "type": [], "default": None}]
+    [{"key": "init_images", "type": list, "default": None}]
 ).generate_model()
 
 class TextToImageResponse(BaseModel):
