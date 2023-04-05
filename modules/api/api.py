@@ -283,7 +283,7 @@ class Api:
 
         output_images = list(map(encode_pil_to_base64, processed))
 
-        return ImageToImageResponse(images=output_images, parameters=vars(rembgreq))
+        return ImageToImageResponse(images=output_images, parameters=vars(rembgreq), info="rembg")
 
     def img2imgapi(self, img2imgreq: StableDiffusionImg2ImgProcessingAPI):
         init_images = img2imgreq.init_images
