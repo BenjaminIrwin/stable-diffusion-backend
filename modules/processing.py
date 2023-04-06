@@ -945,7 +945,28 @@ class RembgProcessing():
         for img in self.init_images:
             # Convert b64 string to PIL image
             img = Image.open(io.BytesIO(base64.b64decode(img)))
+            # Get image dims so that w x h ratio stays the same but smallest side is at least 300px
+            og_w, og_h = img.size
+            resize = False
+            if not (og_w >= 300 and og_h >= 300):
+                resize = True
+                # Get image dims so that w x h ratio stays the same but smallest side is at least 300px
+                if og_w < og_h:
+                    h = int(300 * og_h / og_w)
+                    w = 300
+                else:
+                    w = int(300 * og_w / og_h)
+                    h = 300
+
+                # Resize image
+                img = images.resize_image(0, img, w, h, transparent_bg=True)
+
             no_bg_img = remove(img, session=new_session('u2net_human_seg'))
+
+            if resize:
+                # Resize back to original size
+                no_bg_img = images.resize_image(0, no_bg_img, og_w, og_h, transparent_bg=True)
+
             output_images.append(no_bg_img)
 
         return output_images
