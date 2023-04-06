@@ -197,7 +197,6 @@ class AuthenticationRouter(APIRoute):
             data = {
                 'user_id': user_id,
                 'task': task,
-                'params': response_body['parameters'],
                 'init_images': init_images,
                 'output_images': output_images,
                 'timestamp': gfirestore.SERVER_TIMESTAMP
@@ -206,6 +205,10 @@ class AuthenticationRouter(APIRoute):
             if 'mask' in request_body and request_body['mask']:
                 mask = upload_base64_file(request_body['mask'])
                 data['mask'] = mask
+            if task != 'rembg':
+                data['params'] = response_body['parameters']
+
+
 
             requests_db.add(data)
 
