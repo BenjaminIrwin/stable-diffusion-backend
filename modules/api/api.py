@@ -162,6 +162,7 @@ class AuthenticationRouter(APIRoute):
         original_route_handler = super().get_route_handler()
 
         def log_increment_generation_count(id, request_body, task):
+            print('logging for task' + task)
             if task == "rembg":
                 amount = len(request_body['init_images'])
             else:
