@@ -1030,6 +1030,18 @@ class StableDiffusionProcessingImg2Img(StableDiffusionProcessing):
                 self.mask_for_overlay = Image.fromarray(np_mask)
 
             self.overlay_images = []
+            # print image_mask base64
+            with BytesIO() as buffer:
+                image_mask.save(buffer, format="PNG")
+                img_bytes = buffer.getvalue()
+
+            # Convert the bytes to a base64 string
+            base64_img = base64.b64encode(img_bytes).decode("ascii")
+
+            # Print the base64 string
+            print('IMAGE MASK: ')
+            print(base64_img)
+
 
         latent_mask = self.latent_mask if self.latent_mask is not None else image_mask
 
