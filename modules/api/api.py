@@ -161,8 +161,11 @@ class AuthenticationRouter(APIRoute):
     def get_route_handler(self) -> Callable:
         original_route_handler = super().get_route_handler()
 
-        def log_increment_generation_count(id, request_body):
-            amount = request_body['batch_size'] * request_body['n_iter']
+        def log_increment_generation_count(id, request_body, task):
+            if task == "rembg":
+                amount = len(request_body['init_images'])
+            else:
+                amount = request_body['batch_size'] * request_body['n_iter']
             user_ref = users_db.document(id)
             user_ref.update({"cur_generations": gfirestore.Increment(amount)})
 
@@ -184,23 +187,27 @@ class AuthenticationRouter(APIRoute):
         async def log(request: Request, response: Response, user_id):
             task = request.scope.get('path', 'err').split('/')[-1]
             request_body = await request.json()
-            log_increment_generation_count(user_id, request_body)
+            log_increment_generation_count(user_id, request_body, task)
             response_body = json.loads(response.body)
             log_images(user_id, task, request_body, response_body)
 
         def log_images(user_id, task, request_body, response_body):
-            init_image = upload_base64_file(request_body['init_images'][0])
-            mask = upload_base64_file(request_body['mask'])
+            init_images = upload_base64_files(request_body['init_images'])
             output_images = upload_base64_files(response_body['images'])
-            requests_db.add({
+            data = {
                 'user_id': user_id,
                 'task': task,
                 'params': response_body['parameters'],
-                'init_image': init_image,
-                'mask': mask,
+                'init_images': init_images,
                 'output_images': output_images,
                 'timestamp': gfirestore.SERVER_TIMESTAMP
-            })
+            }
+            # If the request has a mask field which is not null
+            if 'mask' in request_body and request_body['mask']:
+                mask = upload_base64_file(request_body['mask'])
+                data['mask'] = mask
+
+            requests_db.add(data)
 
         async def custom_route_handler(request: Request) -> Response:
             before = time.time()
