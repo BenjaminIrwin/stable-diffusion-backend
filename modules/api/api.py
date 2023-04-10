@@ -163,8 +163,10 @@ class AuthenticationRouter(APIRoute):
             user_ref.update({"cur_generations": gfirestore.Increment(amount)})
 
         def auth(request):
-            api_key = request.headers['api_key']
-            if api_key:
+            # check if api_key is in headers
+
+            if 'api_key' in request.headers:
+                api_key = request.headers['api_key']
                 # Query firebase firestore database with api_key
                 res = users_db.where('api_key', '==', api_key).get()
                 if len(res) > 0:
@@ -175,7 +177,7 @@ class AuthenticationRouter(APIRoute):
                 else:
                     raise HTTPException(status_code=403, detail="Incorrect api_key provided.")
             else:
-                raise HTTPException(status_code=401, detail="No api_key provided.")
+                raise HTTPException(status_code=403, detail="No api_key provided.")
 
         async def log(request: Request, response: Response, user_id):
             task = request.scope.get('path', 'err').split('/')[-1]
@@ -227,7 +229,7 @@ class Api:
         api_middleware(self.app)
 
         # add api route for root which always returns 200
-        self.router.add_api_route("/", lambda: Response(status_code=200))
+        # self.router.add_api_route("/", lambda: Response(status_code=200))
 
         self.add_api_route_auth("/sdapi/v1/person", self.img2imgapi, methods=["POST"], response_model=ImageToImageResponse)
         self.add_api_route_auth("/sdapi/v1/rembg", self.rembgapi, methods=["POST"], response_model=ImageToImageResponse)
