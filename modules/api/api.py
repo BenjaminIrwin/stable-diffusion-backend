@@ -1,47 +1,40 @@
 import asyncio
 import base64
+import datetime
 import io
 import json
-import random
 import time
-import datetime
-import uvicorn
-from threading import Lock
 from io import BytesIO
-from gradio.processing_utils import decode_base64_to_file
-from fastapi import APIRouter, BackgroundTasks, Depends, FastAPI, HTTPException, Request, Response
-from fastapi.security.api_key import APIKeyHeader, APIKey
-from fastapi.routing import APIRoute
-
-from modules.rembg.rembg.bg import remove
-from modules.rembg.rembg.session_factory import new_session
+from threading import Lock
+from typing import Callable
 
 import firebase_admin
-from firebase_admin import credentials, firestore
-from google.cloud import firestore as gfirestore
-from constants import *
-from modules.s3 import upload_base64_file, upload_base64_files
-from prompts import *
-from prompt_gen import people_prompt_gen
-
-import modules.shared as shared
-from modules import sd_samplers, deepbooru, sd_hijack, images, scripts, ui, postprocessing
-from modules.api.models import *
-from modules.processing import StableDiffusionProcessingTxt2Img, StableDiffusionProcessingImg2Img, process_images, \
-    RembgProcessing
-from modules.textual_inversion.textual_inversion import create_embedding, train_embedding
-from modules.textual_inversion.preprocess import preprocess
-from modules.hypernetworks.hypernetwork import create_hypernetwork, train_hypernetwork
-from PIL import PngImagePlugin, Image
-from modules.sd_models import checkpoints_list
-from modules.sd_models_config import find_checkpoint_config_near_filename
-from modules.realesrgan_model import get_realesrgan_models
-from modules import devices
-from typing import List, Callable
 import piexif
 import piexif.helper
-
 import sentry_sdk
+import uvicorn
+from PIL import PngImagePlugin, Image
+from fastapi import APIRouter, Depends, FastAPI, HTTPException, Request, Response
+from fastapi.routing import APIRoute
+from firebase_admin import credentials, firestore
+from google.cloud import firestore as gfirestore
+from gradio.processing_utils import decode_base64_to_file
+
+import modules.shared as shared
+from constants import *
+from modules import devices
+from modules import sd_samplers, deepbooru, sd_hijack, images, scripts, ui, postprocessing
+from modules.api.models import *
+from modules.hypernetworks.hypernetwork import create_hypernetwork, train_hypernetwork
+from modules.processing import StableDiffusionProcessingTxt2Img, StableDiffusionProcessingImg2Img, process_images, \
+    RembgProcessing
+from modules.realesrgan_model import get_realesrgan_models
+from modules.s3 import upload_base64_file, upload_base64_files
+from modules.sd_models import checkpoints_list
+from modules.sd_models_config import find_checkpoint_config_near_filename
+from modules.textual_inversion.preprocess import preprocess
+from modules.textual_inversion.textual_inversion import create_embedding, train_embedding
+from prompt_gen import people_prompt_gen
 
 sentry_sdk.init(
     dsn="https://db21fe40066142b093719b3e9a7d57f6@o4504922099089408.ingest.sentry.io/4504922100465669",
