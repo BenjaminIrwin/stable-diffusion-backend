@@ -15,11 +15,10 @@ import random
 import cv2
 from skimage import exposure
 from typing import Any, Dict, List, Optional
-from modules.rembg.rembg.bg import remove
-from modules.rembg.rembg.session_factory import new_session
 
 import modules.sd_hijack
 from modules import devices, prompt_parser, masking, sd_samplers, lowvram, generation_parameters_copypaste, script_callbacks, extra_networks, sd_vae_approx, scripts
+from rembg import remove, new_session
 from modules.sd_hijack import model_hijack
 from modules.shared import opts, cmd_opts, state
 import modules.shared as shared
