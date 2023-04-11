@@ -20,8 +20,6 @@ from firebase_admin import credentials, firestore
 from google.cloud import firestore as gfirestore
 from gradio.processing_utils import decode_base64_to_file
 
-from test_images import test_images
-
 import modules.shared as shared
 from constants import *
 from modules import devices
@@ -300,6 +298,15 @@ class Api:
         return ImageToImageResponse(images=output_images, parameters=vars(rembgreq), info="rembg")
 
     def img2imgapitest(self, img2imgreq: StableDiffusionImg2ImgProcessingAPI):
+
+        # Load the test image
+        test_image = Image.open("test.jpeg")
+
+        # Convert to base64 string without the header
+        test_image = encode_pil_to_base64(test_image)
+
+        test_images = [test_image, test_image, test_image, test_image]
+
         return ImageToImageResponse(images=test_images, parameters=vars(img2imgreq), info="test")
 
     def img2imgapi(self, img2imgreq: StableDiffusionImg2ImgProcessingAPI):
