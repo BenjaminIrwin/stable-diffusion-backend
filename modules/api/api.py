@@ -175,7 +175,7 @@ class AuthenticationRouter(APIRoute):
                     user = res[0]
                     if user.get('cur_generations') >= user.get('generation_limit'):
                         raise HTTPException(status_code=429, detail="Max generations reached.")
-                    return user
+                    return user.id
                 else:
                     raise HTTPException(status_code=403, detail="Incorrect api_key provided.")
             else:
@@ -211,14 +211,14 @@ class AuthenticationRouter(APIRoute):
 
         async def custom_route_handler(request: Request) -> Response:
             before = time.time()
-            user = auth(request)
-            print(user)
+            user_id = auth(request)
             response: Response = await original_route_handler(request)
             duration = time.time() - before
             response.headers["X-Response-Time"] = str(duration)
             # if 200 and path begins with 'sdapi'
-            if response.status_code == 200 and request.scope.get('path', 'err').startswith('/sdapi') and user.email != 'benjamintdirwin@gmail.com':
-                asyncio.ensure_future(log(request, response, user.id))
+            path = request.scope.get('path', 'err')
+            if response.status_code == 200 and path.startswith('/sdapi') and not path.endswith('test'):
+                asyncio.ensure_future(log(request, response, user_id))
             return response
 
         return custom_route_handler
@@ -235,6 +235,8 @@ class Api:
         # self.router.add_api_route("/", lambda: Response(status_code=200))
 
         self.add_api_route_auth("/sdapi/v1/person", self.img2imgapi, methods=["POST"], response_model=ImageToImageResponse)
+        self.add_api_route_auth("/sdapi/v1/person/test", self.img2imgapitest, methods=["POST"], response_model=ImageToImageResponse)
+
         self.add_api_route_auth("/sdapi/v1/rembg", self.rembgapi, methods=["POST"], response_model=ImageToImageResponse)
 
     def add_api_route_auth(self, path: str, endpoint, **kwargs):
@@ -296,6 +298,9 @@ class Api:
         output_images = list(map(encode_pil_to_base64, processed))
 
         return ImageToImageResponse(images=output_images, parameters=vars(rembgreq), info="rembg")
+
+    def img2imgapitest(self, img2imgreq: StableDiffusionImg2ImgProcessingAPI):
+        return ImageToImageResponse(images=test_images, parameters=vars(img2imgreq), info="test")
 
     def img2imgapi(self, img2imgreq: StableDiffusionImg2ImgProcessingAPI):
         if(img2imgreq.action == "test"):
