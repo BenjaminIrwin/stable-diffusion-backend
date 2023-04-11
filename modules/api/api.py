@@ -22,6 +22,7 @@ from gradio.processing_utils import decode_base64_to_file
 
 import modules.shared as shared
 from constants import *
+from make_a_hole_in_image import make_a_hole_in_image
 from modules import devices
 from modules import sd_samplers, deepbooru, sd_hijack, images, scripts, ui, postprocessing
 from modules.api.models import *
@@ -236,6 +237,7 @@ class Api:
         self.add_api_route_auth("/sdapi/v1/person/test", self.img2imgapitest, methods=["POST"], response_model=ImageToImageResponse)
 
         self.add_api_route_auth("/sdapi/v1/rembg", self.rembgapi, methods=["POST"], response_model=ImageToImageResponse)
+        self.add_api_route_auth("/sdapi/v1/rembg/test", self.rembgapitest, methods=["POST"], response_model=ImageToImageResponse)
 
     def add_api_route_auth(self, path: str, endpoint, **kwargs):
         return self.router.add_api_route(path, endpoint, route_class_override=AuthenticationRouter, **kwargs)
@@ -283,6 +285,22 @@ class Api:
         b64images = list(map(encode_pil_to_base64, processed.images))
 
         return TextToImageResponse(images=b64images, parameters=vars(txt2imgreq), info=processed.js())
+
+    def rembgapitest(self, rembgreq: RembgProcessingAPI):
+        init_images = rembgreq.init_images
+        if init_images is None:
+            raise HTTPException(status_code=404, detail="Init image not found")
+
+
+        processed = []
+        with self.queue_lock:
+            for img in init_images:
+                output_image = make_a_hole_in_image(img)
+                processed.append(output_image)
+
+        output_images = list(map(encode_pil_to_base64, processed))
+
+        return ImageToImageResponse(images=output_images, parameters=vars(rembgreq), info="rembg")
 
     def rembgapi(self, rembgreq: RembgProcessingAPI):
         init_images = rembgreq.init_images
