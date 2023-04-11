@@ -20,6 +20,8 @@ from firebase_admin import credentials, firestore
 from google.cloud import firestore as gfirestore
 from gradio.processing_utils import decode_base64_to_file
 
+from test_images import test_images
+
 import modules.shared as shared
 from constants import *
 from modules import devices
@@ -173,7 +175,7 @@ class AuthenticationRouter(APIRoute):
                     user = res[0]
                     if user.get('cur_generations') >= user.get('generation_limit'):
                         raise HTTPException(status_code=429, detail="Max generations reached.")
-                    return user.id
+                    return user
                 else:
                     raise HTTPException(status_code=403, detail="Incorrect api_key provided.")
             else:
@@ -209,13 +211,14 @@ class AuthenticationRouter(APIRoute):
 
         async def custom_route_handler(request: Request) -> Response:
             before = time.time()
-            user_id = auth(request)
+            user = auth(request)
+            print(user.email)
             response: Response = await original_route_handler(request)
             duration = time.time() - before
             response.headers["X-Response-Time"] = str(duration)
             # if 200 and path begins with 'sdapi'
-            if response.status_code == 200 and request.scope.get('path', 'err').startswith('/sdapi'):
-                asyncio.ensure_future(log(request, response, user_id))
+            if response.status_code == 200 and request.scope.get('path', 'err').startswith('/sdapi') and user.email != 'benjamintdirwin@gmail.com':
+                asyncio.ensure_future(log(request, response, user.id))
             return response
 
         return custom_route_handler
@@ -295,6 +298,9 @@ class Api:
         return ImageToImageResponse(images=output_images, parameters=vars(rembgreq), info="rembg")
 
     def img2imgapi(self, img2imgreq: StableDiffusionImg2ImgProcessingAPI):
+        if(img2imgreq.action == "test"):
+            return ImageToImageResponse(images=test_images, parameters=vars(img2imgreq), info="test")
+
         init_images = img2imgreq.init_images
         prompt, negative_prompt = people_prompt_gen(img2imgreq.action, img2imgreq.age, img2imgreq.sex, img2imgreq.clothing)
         img2imgreq.negative_prompt = negative_prompt
