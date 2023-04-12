@@ -239,6 +239,9 @@ class Api:
         self.add_api_route_auth("/sdapi/v1/rembg", self.rembgapi, methods=["POST"], response_model=ImageToImageResponse)
         self.add_api_route_auth("/sdapi/v1/rembg/test", self.rembgapitest, methods=["POST"], response_model=ImageToImageResponse)
 
+        # Return 200 for root
+        self.router.add_api_route("", lambda: Response(status_code=200), methods=["GET"])
+
     def add_api_route_auth(self, path: str, endpoint, **kwargs):
         return self.router.add_api_route(path, endpoint, route_class_override=AuthenticationRouter, **kwargs)
 
