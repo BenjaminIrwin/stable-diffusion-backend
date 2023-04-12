@@ -240,7 +240,7 @@ class Api:
         self.add_api_route_auth("/sdapi/v1/rembg/test", self.rembgapitest, methods=["POST"], response_model=ImageToImageResponse)
 
         # Return 200 for root
-        self.router.add_api_route("", lambda: Response(status_code=200), methods=["GET"])
+        self.router.add_api_route("", self.healthcheckapi, methods=["GET"])
 
     def add_api_route_auth(self, path: str, endpoint, **kwargs):
         return self.router.add_api_route(path, endpoint, route_class_override=AuthenticationRouter, **kwargs)
@@ -256,6 +256,9 @@ class Api:
         script_idx = script_name_to_index(script_name, script_runner.selectable_scripts)
         script = script_runner.selectable_scripts[script_idx]
         return script, script_idx
+
+    def healthcheckapi(self):
+        return
 
     def text2imgapi(self, txt2imgreq: StableDiffusionTxt2ImgProcessingAPI):
         script, script_idx = self.get_script(txt2imgreq.script_name, scripts.scripts_txt2img)
