@@ -210,12 +210,13 @@ class AuthenticationRouter(APIRoute):
 
         async def custom_route_handler(request: Request) -> Response:
             before = time.time()
-            user_id = auth(request)
+            path = request.scope.get('path', 'err')
+            if path.startswith('/sdapi'):
+                user_id = auth(request)
             response: Response = await original_route_handler(request)
             duration = time.time() - before
             response.headers["X-Response-Time"] = str(duration)
             # if 200 and path begins with 'sdapi'
-            path = request.scope.get('path', 'err')
             if response.status_code == 200 and path.startswith('/sdapi') and not path.endswith('test'):
                 asyncio.ensure_future(log(request, response, user_id))
             return response
