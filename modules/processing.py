@@ -498,7 +498,7 @@ def create_infotext(p, all_prompts, all_seeds, all_subseeds, comments=None, iter
 def process_images(p: StableDiffusionProcessing) -> Processed:
     stored_opts = {k: opts.data[k] for k in p.override_settings.keys()}
 
-    print(p)
+    print(vars(p))
 
     try:
         for k, v in p.override_settings.items():
