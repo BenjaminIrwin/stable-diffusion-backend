@@ -423,21 +423,8 @@ class Api:
 
     def img2imgapi(self, img2imgreq: StableDiffusionImg2ImgProcessingAPI):
 
-        print('INITIAL IMAGE:')
-        print(img2imgreq.init_images)
-
-        print('INITIAL MASK:')
-        print(img2imgreq.mask)
-
-        # Make a copy of img2imgreq
-        img2imgreq_copy = img2imgreq.copy()
-
-        # Remove mask and init_images from copy
-        img2imgreq_copy.mask = None
-        img2imgreq_copy.init_images = None
-
-        print('INPUT PARAMS:')
-        print(vars(img2imgreq_copy))
+        print('PARAMS:')
+        print(img2imgreq)
 
         init_images = img2imgreq.init_images
         prompt, negative_prompt = people_prompt_gen(img2imgreq.action, img2imgreq.age, img2imgreq.sex, img2imgreq.clothing)
