@@ -461,11 +461,7 @@ class Api:
             "do_not_save_grid": not img2imgreq.save_images,
             "mask": mask,
         })
-            "do_not_save_samples": True,
-            "do_not_save_grid": True,
-            "mask": mask
-        }
-        )
+
         if populate.sampler_name:
             populate.sampler_index = None  # prevent a warning later on
 
