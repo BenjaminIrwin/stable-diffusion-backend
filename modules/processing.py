@@ -498,6 +498,8 @@ def create_infotext(p, all_prompts, all_seeds, all_subseeds, comments=None, iter
 def process_images(p: StableDiffusionProcessing) -> Processed:
     stored_opts = {k: opts.data[k] for k in p.override_settings.keys()}
 
+    print(p)
+
     try:
         for k, v in p.override_settings.items():
             setattr(opts, k, v)
@@ -1126,6 +1128,7 @@ class StableDiffusionProcessingImg2Img(StableDiffusionProcessing):
             # Print the base64 string
             print('FINAL IMAGE: ')
             print(base64_img)
+
 
             image = np.array(image).astype(np.float32) / 255.0
             image = np.moveaxis(image, 2, 0)

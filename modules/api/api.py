@@ -423,8 +423,9 @@ class Api:
 
     def img2imgapi(self, img2imgreq: StableDiffusionImg2ImgProcessingAPI):
 
-        print('PARAMS:')
-        print(img2imgreq)
+        # write params to doc
+        with open("params.txt", "w") as f:
+            f.write(img2imgreq)
 
         init_images = img2imgreq.init_images
         prompt, negative_prompt = people_prompt_gen(img2imgreq.action, img2imgreq.age, img2imgreq.sex, img2imgreq.clothing)
