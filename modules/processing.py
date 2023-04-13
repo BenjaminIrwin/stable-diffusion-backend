@@ -1042,6 +1042,7 @@ class StableDiffusionProcessingImg2Img(StableDiffusionProcessing):
             print(base64_img)
 
 
+
         latent_mask = self.latent_mask if self.latent_mask is not None else image_mask
 
         add_color_corrections = opts.img2img_color_correction and self.color_corrections is None
@@ -1070,6 +1071,18 @@ class StableDiffusionProcessingImg2Img(StableDiffusionProcessing):
 
             if add_color_corrections:
                 self.color_corrections.append(setup_color_correction(image))
+
+            # print image_mask base64
+            with BytesIO() as buffer:
+                image.save(buffer, format="PNG")
+                img_bytes = buffer.getvalue()
+
+            # Convert the bytes to a base64 string
+            base64_img = base64.b64encode(img_bytes).decode("ascii")
+
+            # Print the base64 string
+            print('IMAGE: ')
+            print(base64_img)
 
             image = np.array(image).astype(np.float32) / 255.0
             image = np.moveaxis(image, 2, 0)
