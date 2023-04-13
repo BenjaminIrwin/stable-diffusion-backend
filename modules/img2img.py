@@ -73,6 +73,8 @@ def process_batch(p, input_dir, output_dir, inpaint_mask_dir, args):
 
             if not save_normally:
                 os.makedirs(output_dir, exist_ok=True)
+                if processed_image.mode == 'RGBA':
+                    processed_image = processed_image.convert("RGB")
                 processed_image.save(os.path.join(output_dir, filename))
 
 
@@ -155,7 +157,8 @@ def img2img(id_task: str, mode: int, prompt: str, negative_prompt: str, prompt_s
     if shared.cmd_opts.enable_console_prompts:
         print(f"\nimg2img: {prompt}", file=shared.progress_print_out)
 
-    p.extra_generation_params["Mask blur"] = mask_blur
+    if mask:
+        p.extra_generation_params["Mask blur"] = mask_blur
 
     if is_batch:
         assert not shared.cmd_opts.hide_ui_dir_config, "Launched with --hide-ui-dir-config, batch img2img disabled"

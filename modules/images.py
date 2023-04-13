@@ -19,7 +19,7 @@ import string
 import json
 import hashlib
 
-from modules import sd_samplers, shared, script_callbacks
+from modules import sd_samplers, shared, script_callbacks, errors
 from modules.shared import opts, cmd_opts
 
 LANCZOS = (Image.Resampling.LANCZOS if hasattr(Image, 'Resampling') else Image.LANCZOS)
@@ -262,9 +262,12 @@ def resize_image(resize_mode, im, width, height, upscaler_name=None, transparent
 
         if scale > 1.0:
             upscalers = [x for x in shared.sd_upscalers if x.name == upscaler_name]
-            assert len(upscalers) > 0, f"could not find upscaler named {upscaler_name}"
+            if len(upscalers) == 0:
+                upscaler = shared.sd_upscalers[0]
+                print(f"could not find upscaler named {upscaler_name or '<empty string>'}, using {upscaler.name} as a fallback")
+            else:
+                upscaler = upscalers[0]
 
-            upscaler = upscalers[0]
             im = upscaler.scaler.upscale(im, scale, upscaler.data_path)
 
         if im.width != w or im.height != h:
@@ -561,8 +564,10 @@ def save_image(image, path, basename, seed=None, prompt=None, extension='png', i
         elif extension.lower() in (".jpg", ".jpeg", ".webp"):
             if image_to_save.mode == 'RGBA':
                 image_to_save = image_to_save.convert("RGB")
+            elif image_to_save.mode == 'I;16':
+                image_to_save = image_to_save.point(lambda p: p * 0.0038910505836576).convert("RGB" if extension.lower() == ".webp" else "L")
 
-            image_to_save.save(temp_file_path, format=image_format, quality=opts.jpeg_quality)
+            image_to_save.save(temp_file_path, format=image_format, quality=opts.jpeg_quality, lossless=opts.webp_lossless)
 
             if opts.enable_pnginfo and info is not None:
                 exif_bytes = piexif.dump({
@@ -579,21 +584,28 @@ def save_image(image, path, basename, seed=None, prompt=None, extension='png', i
         os.replace(temp_file_path, filename_without_extension + extension)
 
     fullfn_without_extension, extension = os.path.splitext(params.filename)
+    if hasattr(os, 'statvfs'):
+        max_name_len = os.statvfs(path).f_namemax
+        fullfn_without_extension = fullfn_without_extension[:max_name_len - max(4, len(extension))]
+        params.filename = fullfn_without_extension + extension
+        fullfn = params.filename
     _atomically_save_image(image, fullfn_without_extension, extension)
 
     image.already_saved_as = fullfn
 
-    target_side_length = 4000
-    oversize = image.width > target_side_length or image.height > target_side_length
-    if opts.export_for_4chan and (oversize or os.stat(fullfn).st_size > 4 * 1024 * 1024):
+    oversize = image.width > opts.target_side_length or image.height > opts.target_side_length
+    if opts.export_for_4chan and (oversize or os.stat(fullfn).st_size > opts.img_downscale_threshold * 1024 * 1024):
         ratio = image.width / image.height
 
         if oversize and ratio > 1:
-            image = image.resize((target_side_length, image.height * target_side_length // image.width), LANCZOS)
+            image = image.resize((round(opts.target_side_length), round(image.height * opts.target_side_length / image.width)), LANCZOS)
         elif oversize:
-            image = image.resize((image.width * target_side_length // image.height, target_side_length), LANCZOS)
+            image = image.resize((round(image.width * opts.target_side_length / image.height), round(opts.target_side_length)), LANCZOS)
 
-        _atomically_save_image(image, fullfn_without_extension, ".jpg")
+        try:
+            _atomically_save_image(image, fullfn_without_extension, ".jpg")
+        except Exception as e:
+            errors.display(e, "saving image as downscaled JPG")
 
     if opts.save_txt and info is not None:
         txt_fullfn = f"{fullfn_without_extension}.txt"
@@ -644,6 +656,8 @@ Steps: {json_info["steps"]}, Sampler: {sampler}, CFG scale: {json_info["scale"]}
 
 
 def image_data(data):
+    import gradio as gr
+
     try:
         image = Image.open(io.BytesIO(data))
         textinfo, _ = read_info_from_image(image)
@@ -659,7 +673,7 @@ def image_data(data):
     except Exception:
         pass
 
-    return '', None
+    return gr.update(), None
 
 
 def flatten(img, bgcolor):
