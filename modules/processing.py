@@ -1,8 +1,10 @@
 import base64
+import io
 import json
 import math
 import os
 import sys
+import time
 import warnings
 from io import BytesIO
 
@@ -16,6 +18,7 @@ from typing import Any, Dict, List, Optional
 
 import modules.sd_hijack
 from modules import devices, prompt_parser, masking, sd_samplers, lowvram, generation_parameters_copypaste, script_callbacks, extra_networks, sd_vae_approx, scripts
+from rembg import remove, new_session
 from modules.sd_hijack import model_hijack
 from modules.shared import opts, cmd_opts, state
 import modules.shared as shared
@@ -58,8 +61,9 @@ def apply_color_correction(correction, original_image):
 
     return image
 
+# def remove_bg()
 
-def apply_overlay(image, paste_loc, index, overlays):
+def apply_overlay(image, paste_loc, index, overlays, transparent_bg):
     if overlays is None or index >= len(overlays):
         return image
 
@@ -68,9 +72,11 @@ def apply_overlay(image, paste_loc, index, overlays):
     if paste_loc is not None:
         x, y, w, h = paste_loc
         base_image = Image.new('RGBA', (overlay.width, overlay.height))
-        image = images.resize_image(1, image, w, h)
+        image = images.resize_image(1, image, w, h, transparent_bg=transparent_bg)
         base_image.paste(image, (x, y))
         image = base_image
+        if transparent_bg:
+            return image
 
     image = image.convert('RGBA')
     image.alpha_composite(overlay)
@@ -666,13 +672,34 @@ def process_images_inner(p: StableDiffusionProcessing) -> Processed:
                     p.scripts.postprocess_image(p, pp)
                     image = pp.image
 
+
+                # If p has remove_bg and it's true
+                remove_bg = hasattr(p, 'remove_bg') and p.remove_bg
+                if remove_bg:
+                    no_bg_img = image
+                    if p.color_corrections is not None and i < len(p.color_corrections):
+                        if opts.save and not p.do_not_save_samples and opts.save_images_before_color_correction:
+                            image_without_cc = apply_overlay(no_bg_img, p.paste_to, i, p.overlay_images, True)
+                            images.save_image(image_without_cc, p.outpath_samples, "", seeds[i], prompts[i], opts.samples_format, info=infotext(n, i), p=p, suffix="nobg-before-color-correction")
+                        no_bg_img = apply_color_correction(p.color_corrections[i], no_bg_img)
+
+
+                    print('Removing background...')
+                    # time background removal
+                    start = time.time()
+                    no_bg_img = remove(no_bg_img, session=new_session('u2net_human_seg'))
+                    end = time.time()
+                    print('Background removed in {} seconds'.format(end - start))
+
+                    no_bg_img = apply_overlay(no_bg_img, p.paste_to, i, p.overlay_images, True)
+
                 if p.color_corrections is not None and i < len(p.color_corrections):
                     if opts.save and not p.do_not_save_samples and opts.save_images_before_color_correction:
-                        image_without_cc = apply_overlay(image, p.paste_to, i, p.overlay_images)
+                        image_without_cc = apply_overlay(image, p.paste_to, i, p.overlay_images, False)
                         images.save_image(image_without_cc, p.outpath_samples, "", seeds[i], prompts[i], opts.samples_format, info=infotext(n, i), p=p, suffix="-before-color-correction")
                     image = apply_color_correction(p.color_corrections[i], image)
 
-                image = apply_overlay(image, p.paste_to, i, p.overlay_images)
+                image = apply_overlay(image, p.paste_to, i, p.overlay_images, False)
 
                 if opts.samples_save and not p.do_not_save_samples:
                     images.save_image(image, p.outpath_samples, "", seeds[i], prompts[i], opts.samples_format, info=infotext(n, i), p=p)
@@ -682,6 +709,8 @@ def process_images_inner(p: StableDiffusionProcessing) -> Processed:
                 if opts.enable_pnginfo:
                     image.info["parameters"] = text
                 output_images.append(image)
+                if remove_bg:
+                    output_images.append(no_bg_img)
 
             del x_samples_ddim
 
@@ -902,10 +931,50 @@ class StableDiffusionProcessingTxt2Img(StableDiffusionProcessing):
         return samples
 
 
+class RembgProcessing():
+
+    def __init__(self, init_images: list = None):
+        super().__init__()
+        self.init_images = init_images
+
+
+    def process(self):
+        output_images = []
+
+        for img in self.init_images:
+            # Convert b64 string to PIL image
+            img = Image.open(io.BytesIO(base64.b64decode(img)))
+            # Get image dims so that w x h ratio stays the same but smallest side is at least 300px
+            og_w, og_h = img.size
+            resize = False
+            if not (og_w >= 300 and og_h >= 300):
+                resize = True
+                # Get image dims so that w x h ratio stays the same but smallest side is at least 300px
+                if og_w < og_h:
+                    h = int(300 * og_h / og_w)
+                    w = 300
+                else:
+                    w = int(300 * og_w / og_h)
+                    h = 300
+
+                # Resize image
+                img = images.resize_image(0, img, w, h, transparent_bg=True)
+
+            no_bg_img = remove(img, session=new_session('u2net_human_seg'))
+
+            if resize:
+                # Resize back to original size
+                no_bg_img = images.resize_image(0, no_bg_img, og_w, og_h, transparent_bg=True)
+
+            output_images.append(no_bg_img)
+
+        return output_images
+
+
 class StableDiffusionProcessingImg2Img(StableDiffusionProcessing):
     sampler = None
 
-    def __init__(self, init_images: list = None, resize_mode: int = 0, denoising_strength: float = 0.75, image_cfg_scale: float = None, mask: Any = None, mask_blur: int = 4, inpainting_fill: int = 0, inpaint_full_res: bool = True, inpaint_full_res_padding: int = 0, inpainting_mask_invert: int = 0, initial_noise_multiplier: float = None, **kwargs):
+    def __init__(self, init_images: list = None, resize_mode: int = 0, denoising_strength: float = 0.75, image_cfg_scale: float = None, mask: Any = None, remove_bg: bool = False, action = None, sex = None, clothing = None, age = None, mask_blur: int = 4, inpainting_fill: int = 0, inpaint_full_res: bool = True, inpaint_full_res_padding: int = 0, inpainting_mask_invert: int = 0, initial_noise_multiplier: float = None, **kwargs):
         super().__init__(**kwargs)
 
         self.init_images = init_images
@@ -925,7 +994,7 @@ class StableDiffusionProcessingImg2Img(StableDiffusionProcessing):
         self.mask = None
         self.nmask = None
         self.image_conditioning = None
-
+        self.remove_bg = remove_bg
 
     def init(self, all_prompts, all_seeds, all_subseeds):
         self.sampler = sd_samplers.create_sampler(self.sampler_name, self.sd_model)
@@ -945,14 +1014,13 @@ class StableDiffusionProcessingImg2Img(StableDiffusionProcessing):
             if self.inpaint_full_res:
                 self.mask_for_overlay = image_mask
                 mask = image_mask.convert('L')
-                # Adjust inpaint_full_res_padding to image size
-                adjusted_padding = (self.inpaint_full_res_padding / 512) * mask.width
-                self.inpaint_full_res_padding = adjusted_padding
-                crop_region = masking.get_crop_region(np.array(mask), self.inpaint_full_res_padding)
+                crop_region = masking.get_crop_region(np.array(mask))
                 crop_region = masking.expand_crop_region(crop_region, self.width, self.height, mask.width, mask.height)
                 x1, y1, x2, y2 = crop_region
+
                 mask = mask.crop(crop_region)
                 image_mask = images.resize_image(2, mask, self.width, self.height)
+
                 self.paste_to = (x1, y1, x2-x1, y2-y1)
             else:
                 image_mask = images.resize_image(self.resize_mode, image_mask, self.width, self.height)
@@ -961,6 +1029,19 @@ class StableDiffusionProcessingImg2Img(StableDiffusionProcessing):
                 self.mask_for_overlay = Image.fromarray(np_mask)
 
             self.overlay_images = []
+            # print image_mask base64
+            with BytesIO() as buffer:
+                image_mask.save(buffer, format="PNG")
+                img_bytes = buffer.getvalue()
+
+            # Convert the bytes to a base64 string
+            base64_img = base64.b64encode(img_bytes).decode("ascii")
+
+            # Print the base64 string
+            print('FINAL MASK: ')
+            print(base64_img)
+
+
 
         latent_mask = self.latent_mask if self.latent_mask is not None else image_mask
 
@@ -974,10 +1055,9 @@ class StableDiffusionProcessingImg2Img(StableDiffusionProcessing):
             if crop_region is None and self.resize_mode != 3:
                 image = images.resize_image(self.resize_mode, image, self.width, self.height)
 
-            if image_mask is not None:
+            elif image_mask is not None:
                 image_masked = Image.new('RGBa', (image.width, image.height))
                 image_masked.paste(image.convert("RGBA").convert("RGBa"), mask=ImageOps.invert(self.mask_for_overlay.convert('L')))
-
                 self.overlay_images.append(image_masked.convert('RGBA'))
 
             # crop_region is not None if we are doing inpaint full res
@@ -991,6 +1071,18 @@ class StableDiffusionProcessingImg2Img(StableDiffusionProcessing):
 
             if add_color_corrections:
                 self.color_corrections.append(setup_color_correction(image))
+
+            # print image_mask base64
+            with BytesIO() as buffer:
+                image.save(buffer, format="PNG")
+                img_bytes = buffer.getvalue()
+
+            # Convert the bytes to a base64 string
+            base64_img = base64.b64encode(img_bytes).decode("ascii")
+
+            # Print the base64 string
+            print('FINAL IMAGE: ')
+            print(base64_img)
 
             image = np.array(image).astype(np.float32) / 255.0
             image = np.moveaxis(image, 2, 0)

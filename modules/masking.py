@@ -1,7 +1,7 @@
 from PIL import Image, ImageFilter, ImageOps
 
 
-def get_crop_region(mask, pad=0):
+def get_crop_region(mask, pad_percentage=0.069):
     """finds a rectangular region that contains all masked ares in an image. Returns (x1, y1, x2, y2) coordinates of the rectangle.
     For example, if a user has painted the top-right part of a 512x512 image", the result may be (256, 0, 512, 256)"""
     
@@ -30,6 +30,14 @@ def get_crop_region(mask, pad=0):
         if not (mask[i] == 0).all():
             break
         crop_bottom += 1
+
+    # calculate the longest side of the crop region
+    crop_width = w - crop_left - crop_right
+    crop_height = h - crop_top - crop_bottom
+    longest_side = max(crop_width, crop_height)
+
+    # calculate the padding as a percentage of the longest side
+    pad = int(longest_side * pad_percentage)
 
     return (
         int(max(crop_left-pad, 0)),

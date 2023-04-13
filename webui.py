@@ -183,6 +183,7 @@ def api_only():
     initialize()
 
     app = FastAPI()
+    # app.add_middleware(RollbarMiddleware)  # should be added as the first middleware
     setup_cors(app)
     app.add_middleware(GZipMiddleware, minimum_size=1000)
     api = create_api(app)
