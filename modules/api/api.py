@@ -256,6 +256,9 @@ class Api:
         # Return 200 for root
         self.router.add_api_route("/", self.healthcheckapi, methods=["GET"])
 
+        self.default_script_arg_txt2img = []
+        self.default_script_arg_img2img = []
+
     def add_api_route_auth(self, path: str, endpoint, **kwargs):
         return self.router.add_api_route(path, endpoint, route_class_override=AuthenticationRouter, **kwargs)
 
