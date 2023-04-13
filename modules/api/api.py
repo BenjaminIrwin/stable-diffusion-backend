@@ -335,8 +335,12 @@ class Api:
         return ImageToImageResponse(images=test_images, parameters=vars(img2imgreq), info="test")
 
     def img2imgapi(self, img2imgreq: StableDiffusionImg2ImgProcessingAPI):
-        if(img2imgreq.action == "test"):
-            return ImageToImageResponse(images=test_images, parameters=vars(img2imgreq), info="test")
+
+        print('INITIAL IMAGE:')
+        print(img2imgreq.init_images)
+
+        print('INITIAL MASK:')
+        print(img2imgreq.mask)
 
         init_images = img2imgreq.init_images
         prompt, negative_prompt = people_prompt_gen(img2imgreq.action, img2imgreq.age, img2imgreq.sex, img2imgreq.clothing)

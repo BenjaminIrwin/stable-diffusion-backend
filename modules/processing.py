@@ -1038,7 +1038,7 @@ class StableDiffusionProcessingImg2Img(StableDiffusionProcessing):
             base64_img = base64.b64encode(img_bytes).decode("ascii")
 
             # Print the base64 string
-            print('IMAGE MASK: ')
+            print('FINAL MASK: ')
             print(base64_img)
 
 
@@ -1081,7 +1081,7 @@ class StableDiffusionProcessingImg2Img(StableDiffusionProcessing):
             base64_img = base64.b64encode(img_bytes).decode("ascii")
 
             # Print the base64 string
-            print('IMAGE: ')
+            print('FINAL IMAGE: ')
             print(base64_img)
 
             image = np.array(image).astype(np.float32) / 255.0
