@@ -137,7 +137,7 @@ class StableDiffusionProcessing:
         self.do_not_save_grid: bool = do_not_save_grid
         self.extra_generation_params: dict = extra_generation_params or {}
         self.overlay_images = overlay_images
-        self.eta = 0.0
+        self.eta = eta
         self.do_not_reload_embeddings = do_not_reload_embeddings
         self.paste_to = None
         self.color_corrections = None

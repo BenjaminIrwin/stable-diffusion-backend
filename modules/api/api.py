@@ -484,6 +484,7 @@ class Api:
 
         with self.queue_lock:
             p = StableDiffusionProcessingImg2Img(sd_model=shared.sd_model, **args)
+            p.eta = None
             if mask:
                 p.extra_generation_params["Mask blur"] = p.mask_blur
             p.init_images = [decode_base64_to_image(x) for x in init_images]
