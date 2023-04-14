@@ -415,7 +415,7 @@ class ScriptRunner:
             try:
                 script_args = p.script_args[script.args_from:script.args_to]
                 print(f"Running process: {script.filename}")
-                print(f"Args: {script_args}")
+                print(f"Script args: {script_args}")
                 script.process(p, *script_args)
             except Exception:
                 print(f"Error running process: {script.filename}", file=sys.stderr)
