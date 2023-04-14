@@ -434,6 +434,8 @@ class ScriptRunner:
         for script in self.alwayson_scripts:
             try:
                 script_args = p.script_args[script.args_from:script.args_to]
+                print(f"Running process: {script.filename}")
+                print(f"Script args: {script_args}")
                 script.process_batch(p, *script_args, **kwargs)
             except Exception:
                 print(f"Error running process_batch: {script.filename}", file=sys.stderr)
