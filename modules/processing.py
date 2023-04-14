@@ -14,6 +14,7 @@ import random
 import cv2
 from skimage import exposure
 from typing import Any, Dict, List, Optional
+from rembg import remove, new_session
 
 import modules.sd_hijack
 from modules import devices, prompt_parser, masking, sd_samplers, lowvram, generation_parameters_copypaste, script_callbacks, extra_networks, sd_vae_approx, scripts
@@ -952,7 +953,6 @@ class RembgProcessing():
         super().__init__()
         self.init_images = init_images
 
-
     def process(self):
         output_images = []
 
@@ -972,14 +972,15 @@ class RembgProcessing():
                     w = int(300 * og_w / og_h)
                     h = 300
 
-                # Resize image
-                img = images.resize_image(0, img, w, h, transparent_bg=True)
+                # Resize image using lanczos, retain alpha channel
+                img = img.resize((w, h), resample=Image.LANCZOS).convert('RGBA')
 
             no_bg_img = remove(img, session=new_session('u2net_human_seg'))
 
             if resize:
                 # Resize back to original size
-                no_bg_img = images.resize_image(0, no_bg_img, og_w, og_h, transparent_bg=True)
+                no_bg_img = no_bg_img.resize((og_w, og_h), resample=Image.LANCZOS)
+
 
             output_images.append(no_bg_img)
 
