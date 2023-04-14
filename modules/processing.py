@@ -1,8 +1,11 @@
+import base64
+import io
 import json
 import math
 import os
 import sys
 import warnings
+from io import BytesIO
 
 import torch
 import numpy as np
@@ -943,6 +946,46 @@ class StableDiffusionProcessingTxt2Img(StableDiffusionProcessing):
         return samples
 
 
+class RembgProcessing():
+
+    def __init__(self, init_images: list = None):
+        super().__init__()
+        self.init_images = init_images
+
+
+    def process(self):
+        output_images = []
+
+        for img in self.init_images:
+            # Convert b64 string to PIL image
+            img = Image.open(io.BytesIO(base64.b64decode(img)))
+            # Get image dims so that w x h ratio stays the same but smallest side is at least 300px
+            og_w, og_h = img.size
+            resize = False
+            if not (og_w >= 300 and og_h >= 300):
+                resize = True
+                # Get image dims so that w x h ratio stays the same but smallest side is at least 300px
+                if og_w < og_h:
+                    h = int(300 * og_h / og_w)
+                    w = 300
+                else:
+                    w = int(300 * og_w / og_h)
+                    h = 300
+
+                # Resize image
+                img = images.resize_image(0, img, w, h, transparent_bg=True)
+
+            no_bg_img = remove(img, session=new_session('u2net_human_seg'))
+
+            if resize:
+                # Resize back to original size
+                no_bg_img = images.resize_image(0, no_bg_img, og_w, og_h, transparent_bg=True)
+
+            output_images.append(no_bg_img)
+
+        return output_images
+
+
 class StableDiffusionProcessingImg2Img(StableDiffusionProcessing):
     sampler = None
 
@@ -985,7 +1028,7 @@ class StableDiffusionProcessingImg2Img(StableDiffusionProcessing):
             if self.inpaint_full_res:
                 self.mask_for_overlay = image_mask
                 mask = image_mask.convert('L')
-                crop_region = masking.get_crop_region(np.array(mask), self.inpaint_full_res_padding)
+                crop_region = masking.get_crop_region(np.array(mask))
                 crop_region = masking.expand_crop_region(crop_region, self.width, self.height, mask.width, mask.height)
                 x1, y1, x2, y2 = crop_region
 
@@ -1029,6 +1072,18 @@ class StableDiffusionProcessingImg2Img(StableDiffusionProcessing):
 
             if add_color_corrections:
                 self.color_corrections.append(setup_color_correction(image))
+
+            # print image_mask base64
+            with BytesIO() as buffer:
+                image.save(buffer, format="PNG")
+                img_bytes = buffer.getvalue()
+
+            # Convert the bytes to a base64 string
+            base64_img = base64.b64encode(img_bytes).decode("ascii")
+
+            # Print the base64 string
+            print('FINAL IMAGE: ')
+            print(base64_img)
 
             image = np.array(image).astype(np.float32) / 255.0
             image = np.moveaxis(image, 2, 0)

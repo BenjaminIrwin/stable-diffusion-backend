@@ -1,34 +1,61 @@
+import asyncio
 import base64
-import io
-import time
 import datetime
-import uvicorn
-import gradio as gr
-from threading import Lock
+import io
+import json
+import time
 from io import BytesIO
-from gradio.processing_utils import decode_base64_to_file
-from fastapi import APIRouter, Depends, FastAPI, Request, Response
-from fastapi.security import HTTPBasic, HTTPBasicCredentials
-from fastapi.exceptions import HTTPException
-from fastapi.responses import JSONResponse
-from fastapi.encoders import jsonable_encoder
 from secrets import compare_digest
+from threading import Lock
+from typing import Callable
 
-import modules.shared as shared
-from modules import sd_samplers, deepbooru, sd_hijack, images, scripts, ui, postprocessing
-from modules.api.models import *
-from modules.processing import StableDiffusionProcessingTxt2Img, StableDiffusionProcessingImg2Img, process_images
-from modules.textual_inversion.textual_inversion import create_embedding, train_embedding
-from modules.textual_inversion.preprocess import preprocess
-from modules.hypernetworks.hypernetwork import create_hypernetwork, train_hypernetwork
-from PIL import PngImagePlugin,Image
-from modules.sd_models import checkpoints_list, unload_model_weights, reload_model_weights
-from modules.sd_models_config import find_checkpoint_config_near_filename
-from modules.realesrgan_model import get_realesrgan_models
-from modules import devices
-from typing import List
+import firebase_admin
+import gradio as gr
 import piexif
 import piexif.helper
+import piexif.helper
+import piexif.helper
+import sentry_sdk
+import uvicorn
+from PIL import PngImagePlugin, Image
+from fastapi import APIRouter, Depends, FastAPI, HTTPException, Request, Response
+from fastapi.encoders import jsonable_encoder
+from fastapi.responses import JSONResponse
+from fastapi.routing import APIRoute
+from fastapi.security import HTTPBasic, HTTPBasicCredentials
+from firebase_admin import credentials, firestore
+from google.cloud import firestore as gfirestore
+from gradio.processing_utils import decode_base64_to_file
+from make_a_hole_in_image import make_a_hole_in_image
+from modules.s3 import upload_base64_file, upload_base64_files
+from prompt_gen import people_prompt_gen
+
+import modules.shared as shared
+from constants import *
+from modules import devices
+from modules import sd_samplers, deepbooru, sd_hijack, images, scripts, ui, postprocessing
+from modules.api.models import *
+from modules.hypernetworks.hypernetwork import create_hypernetwork, train_hypernetwork
+from modules.processing import StableDiffusionProcessingTxt2Img, StableDiffusionProcessingImg2Img, process_images, \
+    RembgProcessing
+from modules.realesrgan_model import get_realesrgan_models
+from modules.sd_models import checkpoints_list
+from modules.sd_models import unload_model_weights, reload_model_weights
+from modules.sd_models_config import find_checkpoint_config_near_filename
+from modules.textual_inversion.preprocess import preprocess
+from modules.textual_inversion.textual_inversion import create_embedding, train_embedding
+
+sentry_sdk.init(
+    dsn="https://db21fe40066142b093719b3e9a7d57f6@o4504922099089408.ingest.sentry.io/4504922100465669",
+    traces_sample_rate=1.0,
+)
+
+# Fetch the service account key JSON file contents
+cred = credentials.Certificate(fs_sa_key)
+app = firebase_admin.initialize_app(cred)
+db = firestore.client()
+users_db = db.collection('customers')
+requests_db = db.collection('requests')
 
 def upscaler_to_index(name: str):
     try:
@@ -154,57 +181,105 @@ def api_middleware(app: FastAPI):
     async def http_exception_handler(request: Request, e: HTTPException):
         return handle_exception(request, e)
 
+class AuthenticationRouter(APIRoute):
+    def get_route_handler(self) -> Callable:
+        original_route_handler = super().get_route_handler()
+
+        def log_increment_generation_count(id, request_body, task):
+            if task == "rembg":
+                amount = len(request_body['init_images'])
+            else:
+                amount = request_body['batch_size'] * request_body['n_iter']
+            user_ref = users_db.document(id)
+            user_ref.update({"cur_generations": gfirestore.Increment(amount)})
+
+        def auth(request):
+            # check if api_key is in headers
+
+            if 'api_key' in request.headers:
+                api_key = request.headers['api_key']
+                # Query firebase firestore database with api_key
+                res = users_db.where('api_key', '==', api_key).get()
+                if len(res) > 0:
+                    user = res[0]
+                    # if user.get('cur_generations') >= user.get('generation_limit'):
+                    #     raise HTTPException(status_code=429, detail="Max generations reached.")
+                    return user.id
+                else:
+                    raise HTTPException(status_code=403, detail="Incorrect api_key provided.")
+            else:
+                raise HTTPException(status_code=403, detail="No api_key provided.")
+
+        async def log(request: Request, response: Response, user_id):
+            task = request.scope.get('path', 'err').split('/')[-1]
+            request_body = await request.json()
+            log_increment_generation_count(user_id, request_body, task)
+            response_body = json.loads(response.body)
+            log_images(user_id, task, request_body, response_body)
+
+        def log_images(user_id, task, request_body, response_body):
+            init_images = upload_base64_files(request_body['init_images'])
+            output_images = upload_base64_files(response_body['images'])
+            data = {
+                'user_id': user_id,
+                'task': task,
+                'init_images': init_images,
+                'output_images': output_images,
+                'timestamp': gfirestore.SERVER_TIMESTAMP
+            }
+            # If the request has a mask field which is not null
+            if 'mask' in request_body and request_body['mask']:
+                mask = upload_base64_file(request_body['mask'])
+                data['mask'] = mask
+            if task != 'rembg':
+                data['params'] = response_body['parameters']
+
+
+
+            requests_db.add(data)
+
+        async def custom_route_handler(request: Request) -> Response:
+            before = time.time()
+            path = request.scope.get('path', 'err')
+            if path.startswith('/sdapi'):
+                user_id = auth(request)
+            response: Response = await original_route_handler(request)
+            duration = time.time() - before
+            response.headers["X-Response-Time"] = str(duration)
+            # if 200 and path begins with 'sdapi'
+            if response.status_code == 200 and path.startswith('/sdapi') and not path.endswith('test'):
+                asyncio.ensure_future(log(request, response, user_id))
+            return response
+
+        return custom_route_handler
 
 class Api:
     def __init__(self, app: FastAPI, queue_lock: Lock):
-        if shared.cmd_opts.api_auth:
-            self.credentials = dict()
-            for auth in shared.cmd_opts.api_auth.split(","):
-                user, password = auth.split(":")
-                self.credentials[user] = password
-
-        self.router = APIRouter()
+        self.router = APIRouter(route_class=AuthenticationRouter)
         self.app = app
         self.queue_lock = queue_lock
         api_middleware(self.app)
-        self.add_api_route("/sdapi/v1/txt2img", self.text2imgapi, methods=["POST"], response_model=TextToImageResponse)
-        self.add_api_route("/sdapi/v1/img2img", self.img2imgapi, methods=["POST"], response_model=ImageToImageResponse)
-        self.add_api_route("/sdapi/v1/extra-single-image", self.extras_single_image_api, methods=["POST"], response_model=ExtrasSingleImageResponse)
-        self.add_api_route("/sdapi/v1/extra-batch-images", self.extras_batch_images_api, methods=["POST"], response_model=ExtrasBatchImagesResponse)
-        self.add_api_route("/sdapi/v1/png-info", self.pnginfoapi, methods=["POST"], response_model=PNGInfoResponse)
-        self.add_api_route("/sdapi/v1/progress", self.progressapi, methods=["GET"], response_model=ProgressResponse)
-        self.add_api_route("/sdapi/v1/interrogate", self.interrogateapi, methods=["POST"])
-        self.add_api_route("/sdapi/v1/interrupt", self.interruptapi, methods=["POST"])
-        self.add_api_route("/sdapi/v1/skip", self.skip, methods=["POST"])
-        self.add_api_route("/sdapi/v1/options", self.get_config, methods=["GET"], response_model=OptionsModel)
-        self.add_api_route("/sdapi/v1/options", self.set_config, methods=["POST"])
-        self.add_api_route("/sdapi/v1/cmd-flags", self.get_cmd_flags, methods=["GET"], response_model=FlagsModel)
-        self.add_api_route("/sdapi/v1/samplers", self.get_samplers, methods=["GET"], response_model=List[SamplerItem])
-        self.add_api_route("/sdapi/v1/upscalers", self.get_upscalers, methods=["GET"], response_model=List[UpscalerItem])
-        self.add_api_route("/sdapi/v1/sd-models", self.get_sd_models, methods=["GET"], response_model=List[SDModelItem])
-        self.add_api_route("/sdapi/v1/hypernetworks", self.get_hypernetworks, methods=["GET"], response_model=List[HypernetworkItem])
-        self.add_api_route("/sdapi/v1/face-restorers", self.get_face_restorers, methods=["GET"], response_model=List[FaceRestorerItem])
-        self.add_api_route("/sdapi/v1/realesrgan-models", self.get_realesrgan_models, methods=["GET"], response_model=List[RealesrganItem])
-        self.add_api_route("/sdapi/v1/prompt-styles", self.get_prompt_styles, methods=["GET"], response_model=List[PromptStyleItem])
-        self.add_api_route("/sdapi/v1/embeddings", self.get_embeddings, methods=["GET"], response_model=EmbeddingsResponse)
-        self.add_api_route("/sdapi/v1/refresh-checkpoints", self.refresh_checkpoints, methods=["POST"])
-        self.add_api_route("/sdapi/v1/create/embedding", self.create_embedding, methods=["POST"], response_model=CreateResponse)
-        self.add_api_route("/sdapi/v1/create/hypernetwork", self.create_hypernetwork, methods=["POST"], response_model=CreateResponse)
-        self.add_api_route("/sdapi/v1/preprocess", self.preprocess, methods=["POST"], response_model=PreprocessResponse)
-        self.add_api_route("/sdapi/v1/train/embedding", self.train_embedding, methods=["POST"], response_model=TrainResponse)
-        self.add_api_route("/sdapi/v1/train/hypernetwork", self.train_hypernetwork, methods=["POST"], response_model=TrainResponse)
-        self.add_api_route("/sdapi/v1/memory", self.get_memory, methods=["GET"], response_model=MemoryResponse)
-        self.add_api_route("/sdapi/v1/unload-checkpoint", self.unloadapi, methods=["POST"])
-        self.add_api_route("/sdapi/v1/reload-checkpoint", self.reloadapi, methods=["POST"])
-        self.add_api_route("/sdapi/v1/scripts", self.get_scripts_list, methods=["GET"], response_model=ScriptsList)
 
+        # add api route for root which always returns 200
+        # self.router.add_api_route("/", lambda: Response(status_code=200))
+
+        self.add_api_route_auth("/sdapi/v1/person", self.img2imgapi, methods=["POST"],
+                                response_model=ImageToImageResponse)
+        self.add_api_route_auth("/sdapi/v1/person/test", self.img2imgapitest, methods=["POST"],
+                                response_model=ImageToImageResponse)
+
+        self.add_api_route_auth("/sdapi/v1/rembg", self.rembgapi, methods=["POST"], response_model=ImageToImageResponse)
+        self.add_api_route_auth("/sdapi/v1/rembg/test", self.rembgapitest, methods=["POST"],
+                                response_model=ImageToImageResponse)
+
+        # Return 200 for root
+        self.router.add_api_route("/", lambda: Response(status_code=200), methods=["GET"])
         self.default_script_arg_txt2img = []
         self.default_script_arg_img2img = []
 
-    def add_api_route(self, path: str, endpoint, **kwargs):
-        if shared.cmd_opts.api_auth:
-            return self.app.add_api_route(path, endpoint, dependencies=[Depends(self.auth)], **kwargs)
-        return self.app.add_api_route(path, endpoint, **kwargs)
+    def add_api_route_auth(self, path: str, endpoint, **kwargs):
+        return self.router.add_api_route(path, endpoint, route_class_override=AuthenticationRouter, **kwargs)
+
 
     def auth(self, credentials: HTTPBasicCredentials = Depends(HTTPBasic())):
         if credentials.username in self.credentials:
@@ -321,8 +396,52 @@ class Api:
 
         return TextToImageResponse(images=b64images, parameters=vars(txt2imgreq), info=processed.js())
 
+    def rembgapitest(self, rembgreq: RembgProcessingAPI):
+        init_images = rembgreq.init_images
+        if init_images is None:
+            raise HTTPException(status_code=404, detail="Init image not found")
+
+
+        processed = []
+        with self.queue_lock:
+            for img in init_images:
+                output_image = make_a_hole_in_image(img)
+                processed.append(output_image)
+
+        output_images = list(map(encode_pil_to_base64, processed))
+
+        return ImageToImageResponse(images=output_images, parameters=vars(rembgreq), info="rembg")
+
+    def rembgapi(self, rembgreq: RembgProcessingAPI):
+        init_images = rembgreq.init_images
+        if init_images is None:
+            raise HTTPException(status_code=404, detail="Init image not found")
+
+        with self.queue_lock:
+            p = RembgProcessing(init_images)
+            processed = p.process()
+
+        output_images = list(map(encode_pil_to_base64, processed))
+
+        return ImageToImageResponse(images=output_images, parameters=vars(rembgreq), info="rembg")
+
+    def img2imgapitest(self, img2imgreq: StableDiffusionImg2ImgProcessingAPI):
+
+        # Load the test image
+        test_image = Image.open("test.jpeg")
+
+        # Convert to base64 string without the header
+        test_image = encode_pil_to_base64(test_image)
+
+        test_images = [test_image, test_image, test_image, test_image]
+
+        return ImageToImageResponse(images=test_images, parameters=vars(img2imgreq), info="test")
+
     def img2imgapi(self, img2imgreq: StableDiffusionImg2ImgProcessingAPI):
         init_images = img2imgreq.init_images
+        prompt, negative_prompt = people_prompt_gen(img2imgreq.action, img2imgreq.age, img2imgreq.sex, img2imgreq.clothing)
+        img2imgreq.negative_prompt = negative_prompt
+        img2imgreq.prompt = prompt
         if init_images is None:
             raise HTTPException(status_code=404, detail="Init image not found")
 
@@ -340,10 +459,11 @@ class Api:
 
         populate = img2imgreq.copy(update={  # Override __init__ params
             "sampler_name": validate_sampler_name(img2imgreq.sampler_name or img2imgreq.sampler_index),
-            "do_not_save_samples": not img2imgreq.save_images,
-            "do_not_save_grid": not img2imgreq.save_images,
-            "mask": mask,
-        })
+            "do_not_save_samples": True,
+            "do_not_save_grid": True,
+            "mask": mask
+        }
+        )
         if populate.sampler_name:
             populate.sampler_index = None  # prevent a warning later on
 
@@ -686,4 +806,5 @@ class Api:
 
     def launch(self, server_name, port):
         self.app.include_router(self.router)
+        print('Launching server on {server_name}:{port}'.format(server_name=server_name, port=port))
         uvicorn.run(self.app, host=server_name, port=port)
