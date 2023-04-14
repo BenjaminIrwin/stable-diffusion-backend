@@ -469,6 +469,9 @@ class Api:
             p.init_images = [decode_base64_to_image(x) for x in init_images]
             # Make all init_images RGB
             p.init_images = [x.convert('RGB') for x in p.init_images]
+            # Make mask rgb
+            if p.mask:
+                p.mask = p.mask.convert('RGB')
             p.scripts = script_runner
             p.outpath_grids = opts.outdir_img2img_grids
             p.outpath_samples = opts.outdir_img2img_samples
