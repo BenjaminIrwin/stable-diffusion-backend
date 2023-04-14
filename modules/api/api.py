@@ -17,7 +17,7 @@ import piexif.helper
 import piexif.helper
 import sentry_sdk
 import uvicorn
-from PIL import PngImagePlugin, Image
+from PIL import PngImagePlugin, Image, ImageOps, ImageChops
 from fastapi import APIRouter, Depends, FastAPI, HTTPException, Request, Response
 from fastapi.encoders import jsonable_encoder
 from fastapi.responses import JSONResponse
@@ -88,6 +88,7 @@ def decode_base64_to_image(encoding):
     try:
         image = Image.open(BytesIO(base64.b64decode(encoding)))
         image = image.convert("RGB")
+        image = ImageOps.exif_transpose(image)
         return image
     except Exception as err:
         raise HTTPException(status_code=500, detail="Invalid encoded image")
@@ -483,7 +484,11 @@ class Api:
 
         with self.queue_lock:
             p = StableDiffusionProcessingImg2Img(sd_model=shared.sd_model, **args)
+            if mask:
+                p.extra_generation_params["Mask blur"] = p.mask_blur
             p.init_images = [decode_base64_to_image(x) for x in init_images]
+            alpha_mask = ImageOps.invert(p.init_images[0].split()[-1]).convert('L').point(lambda x: 255 if x > 0 else 0, mode='1')
+            p.mask = ImageChops.lighter(alpha_mask, mask.convert('L')).convert('L')
             p.scripts = script_runner
             p.outpath_grids = opts.outdir_img2img_grids
             p.outpath_samples = opts.outdir_img2img_samples
