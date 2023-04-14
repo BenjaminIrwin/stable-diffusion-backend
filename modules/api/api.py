@@ -87,6 +87,7 @@ def decode_base64_to_image(encoding):
         encoding = encoding.split(";")[1].split(",")[1]
     try:
         image = Image.open(BytesIO(base64.b64decode(encoding)))
+        image = image.convert("RGB")
         return image
     except Exception as err:
         raise HTTPException(status_code=500, detail="Invalid encoded image")
