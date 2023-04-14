@@ -1074,17 +1074,17 @@ class StableDiffusionProcessingImg2Img(StableDiffusionProcessing):
             if add_color_corrections:
                 self.color_corrections.append(setup_color_correction(image))
 
-            # print image_mask base64
-            with BytesIO() as buffer:
-                image.save(buffer, format="PNG")
-                img_bytes = buffer.getvalue()
-
-            # Convert the bytes to a base64 string
-            base64_img = base64.b64encode(img_bytes).decode("ascii")
-
-            # Print the base64 string
-            print('FINAL IMAGE: ')
-            print(base64_img)
+            # # print image_mask base64
+            # with BytesIO() as buffer:
+            #     image.save(buffer, format="PNG")
+            #     img_bytes = buffer.getvalue()
+            #
+            # # Convert the bytes to a base64 string
+            # base64_img = base64.b64encode(img_bytes).decode("ascii")
+            #
+            # # Print the base64 string
+            # print('FINAL IMAGE: ')
+            # print(base64_img)
 
             image = np.array(image).astype(np.float32) / 255.0
             image = np.moveaxis(image, 2, 0)
@@ -1132,6 +1132,12 @@ class StableDiffusionProcessingImg2Img(StableDiffusionProcessing):
                 self.init_latent = self.init_latent * self.mask
 
         self.image_conditioning = self.img2img_image_conditioning(image, self.init_latent, image_mask)
+
+        print('PROCESSING DATA: ')
+        print(vars(self))
+
+        print('PROCESSING IMAGE CONDITIONING DATA: ')
+        print(vars(self.image_conditioning))
 
     def sample(self, conditioning, unconditional_conditioning, seeds, subseeds, subseed_strength, prompts):
         x = create_random_tensors([opt_C, self.height // opt_f, self.width // opt_f], seeds=seeds, subseeds=subseeds, subseed_strength=self.subseed_strength, seed_resize_from_h=self.seed_resize_from_h, seed_resize_from_w=self.seed_resize_from_w, p=self)
