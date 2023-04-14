@@ -1011,6 +1011,8 @@ class StableDiffusionProcessingImg2Img(StableDiffusionProcessing):
         self.nmask = None
         self.image_conditioning = None
 
+        self.subseed = 1
+
     def init(self, all_prompts, all_seeds, all_subseeds):
         self.sampler = sd_samplers.create_sampler(self.sampler_name, self.sd_model)
         crop_region = None
