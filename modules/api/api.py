@@ -442,6 +442,11 @@ class Api:
         prompt, negative_prompt = people_prompt_gen(img2imgreq.action, img2imgreq.age, img2imgreq.sex, img2imgreq.clothing)
         img2imgreq.negative_prompt = negative_prompt
         img2imgreq.prompt = prompt
+
+        # set seed and subseed to 1
+        img2imgreq.seed = 1
+        img2imgreq.subseed = 1
+
         if init_images is None:
             raise HTTPException(status_code=404, detail="Init image not found")
 
