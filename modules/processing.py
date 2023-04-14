@@ -1138,8 +1138,8 @@ class StableDiffusionProcessingImg2Img(StableDiffusionProcessing):
         print('PROCESSING DATA: ')
         print(vars(self))
 
-        print('PROCESSING IMAGE CONDITIONING DATA: ')
-        print(vars(self.image_conditioning))
+        print('SCRIPTs DATA: ')
+        print(vars(self.scripts))
 
     def sample(self, conditioning, unconditional_conditioning, seeds, subseeds, subseed_strength, prompts):
         x = create_random_tensors([opt_C, self.height // opt_f, self.width // opt_f], seeds=seeds, subseeds=subseeds, subseed_strength=self.subseed_strength, seed_resize_from_h=self.seed_resize_from_h, seed_resize_from_w=self.seed_resize_from_w, p=self)
