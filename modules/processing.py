@@ -119,8 +119,8 @@ class StableDiffusionProcessing:
         self.prompt_for_display: str = None
         self.negative_prompt: str = (negative_prompt or "")
         self.styles: list = styles or []
-        self.seed: int = seed
-        self.subseed: int = subseed
+        self.seed: int = 1
+        self.subseed: int = 1
         self.subseed_strength: float = subseed_strength
         self.seed_resize_from_h: int = seed_resize_from_h
         self.seed_resize_from_w: int = seed_resize_from_w

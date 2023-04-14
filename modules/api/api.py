@@ -443,10 +443,6 @@ class Api:
         img2imgreq.negative_prompt = negative_prompt
         img2imgreq.prompt = prompt
 
-        # set seed and subseed to 1
-        img2imgreq.seed = 1
-        img2imgreq.subseed = 1
-
         if init_images is None:
             raise HTTPException(status_code=404, detail="Init image not found")
 
