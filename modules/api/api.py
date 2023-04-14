@@ -461,6 +461,9 @@ class Api:
 
         script_args = self.init_script_args(img2imgreq, self.default_script_arg_img2img, selectable_scripts, selectable_script_idx, script_runner)
 
+        print("script_args", script_args)
+        print(type(script_args))
+
         send_images = args.pop('send_images', True)
         args.pop('save_images', None)
 
