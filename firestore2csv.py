@@ -4,7 +4,7 @@ from pathlib import Path
 from firebase_admin import credentials, firestore, initialize_app
 
 CRED_FILE = Path(__file__).resolve().parent / 'key.json'
-COLLECTION_NAMES = ['customers, requests']
+COLLECTION_NAMES = ['customers', 'requests']
 DIRECTION = firestore.Query.DESCENDING
 
 
@@ -17,16 +17,24 @@ def main():
         filename = 'export_{}.csv'.format(collection_name)
 
         with open(filename, 'w') as file:
-            for idx, snapshot in enumerate(collection.get()):
-                if idx == 0:
-                    fields = snapshot.to_dict().keys()
-                    writer = csv_writer(file, fields)
-                    writer.writeheader()
-                if snapshot.to_dict().keys() != fields:
-                    print('Skipping because of different fields: {}'.format(snapshot.id))
-                else:
-                    data = snapshot.to_dict()
-                    writer.writerow(data)
+            # Get an exhaustive list of all fields
+            fields = set()
+            collection = collection.get()
+            for snapshot in collection:
+                fields.update(snapshot.to_dict().keys())
+
+            writer = csv_writer(file, fields)
+            writer.writeheader()
+            for idx, snapshot in enumerate(collection):
+                dict = snapshot.to_dict()
+                if dict.keys() != fields:
+                    # Add missing fields
+                    for field in fields:
+                        if field not in dict:
+                            dict[field] = None
+
+                data = dict
+                writer.writerow(data)
 
 
 
