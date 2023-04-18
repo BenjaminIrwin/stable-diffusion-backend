@@ -356,7 +356,7 @@ class Api:
         ]
 
         img2imgreq["alwayson_scripts"]["ControlNet"] = {
-            "args": [x.to_dict() for x in controlnet_units]
+            "args": [x for x in controlnet_units]
         }
 
         mask = img2imgreq.mask
