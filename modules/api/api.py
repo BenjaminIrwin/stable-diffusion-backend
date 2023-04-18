@@ -326,6 +326,20 @@ class Api:
         if init_images is None:
             raise HTTPException(status_code=404, detail="Init image not found")
 
+        controlnet_units = [{
+             "input_image": init_images[0],
+             "module": "depth_leres",
+             "model": "control_sd15_depth [fef5e48e]",
+             "weight": 1,
+             "guidance": 1,
+             "guidance_start": 0,
+             "guidance_end": 1,
+        }]
+
+        img2imgreq["alwayson_scripts"]["ControlNet"] = {
+            "args": [x.to_dict() for x in controlnet_units]
+        }
+
         mask = img2imgreq.mask
         if mask:
             mask = decode_base64_to_image(mask)
