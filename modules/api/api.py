@@ -329,12 +329,31 @@ class Api:
         controlnet_units = [{
              "input_image": init_images[0],
              "module": "depth_leres",
-             "model": "control_sd15_depth [fef5e48e]",
+             "model": "control_depth-fp16 [400750f6]",
              "weight": 1,
              "guidance": 1,
              "guidance_start": 0,
              "guidance_end": 1,
-        }]
+        },
+        # {
+        #      "input_image": init_images[0],
+        #      "module": "mlsd",
+        #      "model": "control_mlsd-fp16 [e3705cfa]",
+        #      "weight": 1,
+        #      "guidance": 1,
+        #      "guidance_start": 0,
+        #      "guidance_end": 1,
+        # },
+        # {
+        #      "input_image": init_images[0],
+        #      "module": "scribble",
+        #      "model": "control_scribble-fp16 [c508311e]",
+        #      "weight": 1,
+        #      "guidance": 1,
+        #      "guidance_start": 0,
+        #      "guidance_end": 1,
+        # },
+        ]
 
         img2imgreq["alwayson_scripts"]["ControlNet"] = {
             "args": [x.to_dict() for x in controlnet_units]
