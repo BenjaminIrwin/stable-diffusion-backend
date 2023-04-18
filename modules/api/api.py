@@ -25,6 +25,7 @@ from firebase_admin import credentials, firestore
 from google.cloud import firestore as gfirestore
 
 import modules.shared as shared
+from constants import fs_sa_key
 from modules import sd_samplers, deepbooru, sd_hijack, images, scripts, ui, postprocessing
 from modules.api.models import *
 from modules.processing import StableDiffusionProcessingTxt2Img, StableDiffusionProcessingImg2Img, process_images
