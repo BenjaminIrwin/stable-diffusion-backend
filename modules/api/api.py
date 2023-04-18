@@ -355,7 +355,7 @@ class Api:
         # },
         ]
 
-        img2imgreq["alwayson_scripts"]["ControlNet"] = {
+        img2imgreq.alwayson_scripts["ControlNet"] = {
             "args": [x for x in controlnet_units]
         }
 
