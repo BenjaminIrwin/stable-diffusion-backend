@@ -334,6 +334,7 @@ class Api:
              "guidance": 1,
              "guidance_start": 0,
              "guidance_end": 1,
+            "enabled": True,
         },
         # {
         #      "input_image": init_images[0],
