@@ -325,6 +325,7 @@ class Api:
 
     def img2imgapi(self, img2imgreq: StableDiffusionImg2ImgProcessingAPI):
         init_images = img2imgreq.init_images
+        img2imgreq.negative_prompt = 'art, painting, drawing, anime, CGI, unreal engine, 3d, render, broken, deformed'
         if init_images is None:
             raise HTTPException(status_code=404, detail="Init image not found")
 
