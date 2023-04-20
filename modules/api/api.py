@@ -402,22 +402,13 @@ class Api:
         },
         {
              "input_image": init_images[0],
-             "module": "mlsd",
-             "model": "control_mlsd-fp16 [e3705cfa]",
-             "weight": 1,
+             "module": "hed",
+             "model": "control_hed-fp16[13fee50b]",
+             "weight": 0.65,
              "guidance": 1,
              "guidance_start": 0,
-             "guidance_end": 1,
-        },
-        {
-             "input_image": init_images[0],
-             "module": "scribble",
-             "model": "control_scribble-fp16 [c508311e]",
-             "weight": 1,
-             "guidance": 1,
-             "guidance_start": 0,
-             "guidance_end": 1,
-        },
+             "guidance_end": 0.9,
+        }
         ]
 
         img2imgreq.alwayson_scripts["ControlNet"] = {
