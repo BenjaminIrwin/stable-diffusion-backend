@@ -241,8 +241,8 @@ class AuthenticationRouter(APIRoute):
             duration = time.time() - before
             response.headers["X-Response-Time"] = str(duration)
             # if 200 and path begins with 'sdapi'
-            if response.status_code == 200 and path.startswith('/sdapi') and not path.endswith('test'):
-                asyncio.ensure_future(log(request, response, user_id))
+            # if response.status_code == 200 and path.startswith('/sdapi') and not path.endswith('test'):
+            #     asyncio.ensure_future(log(request, response, user_id))
             return response
 
         return custom_route_handler
