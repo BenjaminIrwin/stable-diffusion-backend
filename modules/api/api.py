@@ -64,6 +64,8 @@ def script_name_to_index(name, scripts):
 def validate_sampler_name(name):
     config = sd_samplers.all_samplers_map.get(name, None)
     if config is None:
+        print(f"Sampler '{name}' not found")
+        print(f"Available samplers: {', '.join(sd_samplers.all_samplers_map.keys())}")
         raise HTTPException(status_code=404, detail="Sampler not found")
 
     return name
