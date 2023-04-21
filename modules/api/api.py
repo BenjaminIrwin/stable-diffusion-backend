@@ -405,7 +405,7 @@ class Api:
         {
              "input_image": init_images[0],
              "module": "hed",
-             "model": "control_hed-fp16[13fee50b]",
+             "model": "control_hed-fp16 [13fee50b]",
              "weight": 0.65,
              "guidance": 1,
              "guidance_start": 0,
