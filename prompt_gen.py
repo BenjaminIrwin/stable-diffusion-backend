@@ -9,7 +9,7 @@ def people_prompt_gen(action, age, sex, clothing):
     orientation_specified = word_present(action, orientation_override_words)
     if not orientation_specified:
         neg_prompt = 'looking at the camera, ' + negative_prompts['people']
-        prompt_mod = prompt_modifiers['people'] + ', looking away'
+        prompt_mod = prompt_modifiers['people']
     else:
         neg_prompt = negative_prompts['people']
         prompt_mod = prompt_modifiers['people']
