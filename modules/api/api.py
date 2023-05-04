@@ -9,6 +9,11 @@ from secrets import compare_digest
 from threading import Lock
 from typing import Callable
 
+import numpy as np
+
+from annotator.openpose import OpenposeDetector
+open_pose_model = OpenposeDetector()
+
 import firebase_admin
 import gradio as gr
 import piexif
@@ -28,6 +33,7 @@ from google.cloud import firestore as gfirestore
 from gradio.processing_utils import decode_base64_to_file
 from make_a_hole_in_image import make_a_hole_in_image
 from modules.s3 import upload_base64_file, upload_base64_files
+from pose_matcher import get_vp_tree
 from prompt_gen import people_prompt_gen
 
 import modules.shared as shared
@@ -263,7 +269,7 @@ class Api:
         # add api route for root which always returns 200
         # self.router.add_api_route("/", lambda: Response(status_code=200))
 
-        self.add_api_route_auth("/sdapi/v1/person", self.img2imgapi, methods=["POST"],
+        self.add_api_route_auth("/sdapi/v1/person", self.personapi, methods=["POST"],
                                 response_model=ImageToImageResponse)
         self.add_api_route_auth("/sdapi/v1/person/test", self.img2imgapitest, methods=["POST"],
                                 response_model=ImageToImageResponse)
@@ -437,7 +443,8 @@ class Api:
 
         return ImageToImageResponse(images=test_images, parameters=vars(img2imgreq), info="test")
 
-    def img2imgapi(self, img2imgreq: StableDiffusionImg2ImgProcessingAPI):
+    def personapi(self, img2imgreq: StableDiffusionImg2ImgProcessingAPI):
+        vp_tree = get_vp_tree(img2imgreq.action, 1)
         init_images = img2imgreq.init_images
         prompt, negative_prompt = people_prompt_gen(img2imgreq.action, img2imgreq.age, img2imgreq.sex, img2imgreq.clothing)
         img2imgreq.negative_prompt = negative_prompt
@@ -495,7 +502,15 @@ class Api:
                 processed = process_images(p)
             shared.state.end()
 
-        b64images = list(map(encode_pil_to_base64, processed.images)) if send_images else []
+        b64images = []
+
+        for image in processed.images:
+            # Get point by doing openpose
+            point = open_pose_model(np.array(image.convert('RGB')), include_body=True, include_hand=False, include_face=False, return_is_index=True)['0']
+            b64images.append(vp_tree.get_n_nearest_neighbors(point, 8))
+
+
+
 
         if not img2imgreq.include_init_images:
             img2imgreq.init_images = None
