@@ -7,7 +7,10 @@ import vptree
 from datasets import load_dataset, Dataset
 import pandas as pd
 
-from annotator.openpose import OpenposeDetector
+import base64
+from io import BytesIO
+
+from openpose_hijack.openpose import OpenposeDetector
 
 open_pose_model = OpenposeDetector()
 
@@ -16,9 +19,17 @@ q_tokenizer = DPRQuestionEncoderTokenizer.from_pretrained("facebook/dpr-question
 
 
 def get_image_open_pose(image):
+
+    # Convert image to base64
+    print('IMAGE STRING')
+    buffered = BytesIO()
+    image.save(buffered, format="JPEG")
+    img_str = base64.b64encode(buffered.getvalue())
+    print(img_str)
+
+
     # Get point by doing openpose
-    open_pose = \
-    open_pose_model(np.array(image.convert('RGB')), include_body=True, include_hand=False, include_face=False,
+    open_pose = open_pose_model(np.array(image.convert('RGB')), include_body=True, include_hand=False, include_face=False,
                     return_is_index=True)
     print('GENERATED OPEN_POSE')
     print(open_pose)
