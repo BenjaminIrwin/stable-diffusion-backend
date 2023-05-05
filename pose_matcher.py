@@ -198,12 +198,24 @@ class PoseVector:
         # Resize image to match the height of pose_vector.image
         min_image = image.resize((int(width * scale), int(height * scale)), Image.LANCZOS)
 
-        # Find where the feet of each area
+        paste_coords = (0, 0)
 
-        # Get x and y difference between feet positions
+        # Iterate backwards through the vectors in increments of 3 and when you find a value which is not None for both, calculate the
+        # difference between the two values and use that to calculate the paste_coords
+        for i in range(len(self.vector), -1, -3):
+            y = self.vector[i]
+            x = self.vector[i - 1]
+            if y is not None and x is not None:
+                y2 = pose_vector.vector[i]
+                x2 = pose_vector.vector[i - 1]
+                if y2 is not None and x2 is not None:
+                    # Calculate difference between the two values
+                    y_diff = int(y2 - y)
+                    x_diff = int(x2 - x)
+                    # Calculate using y_diff and x_diff
+                    paste_coords = (x_diff, y_diff)
+                    break
 
-        # Calculate paste_coords such that the feet of the two images are aligned
-        paste_coords =
 
         print('Pasting image with size {} at coords {}'.format(min_image.size, paste_coords))
 
