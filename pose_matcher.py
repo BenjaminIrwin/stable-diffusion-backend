@@ -212,7 +212,6 @@ class PoseVector:
         if bb_with_padding[3] > image.height:
             bb_with_padding[3] = image.height
 
-
         # Crop self.image to self.original_bb
         min_image = self.image.crop(bb_with_padding)
 
@@ -220,8 +219,10 @@ class PoseVector:
         min_image = min_image.resize((int(min_image.width * scale), int(min_image.height * scale)), Image.LANCZOS)
 
         # Calculate paste_coords based on pose_vector.original_bb[0], pose_vector.original_bb[1] and padding
-        paste_coords = (min(0, int(pose_vector.original_bb[0] - (width * pad))),
-                        min(0, pose_vector.original_bb[1] - (height * pad)))
+        paste_coords = (int(min(0, int(pose_vector.original_bb[0] - (width * pad)))),
+                        int(min(0, pose_vector.original_bb[1] - (height * pad))))
+
+        # Make paste coords int
 
 
         image.paste(min_image, paste_coords)
