@@ -213,9 +213,16 @@ class PoseVector:
                 if y2 is not None and x2 is not None:
                     print('Found y2 and x2 at index {}'.format(i))
                     print('y2: {}, x2: {}'.format(y2, x2))
+
+                    x_point = int(x * self.original_size[0])
+                    y_point = int(y * self.original_size[1])
+
+                    x2_point = int(x2 * pose_vector.original_size[0])
+                    y2_point = int(y2 * pose_vector.original_size[1])
+
                     # Calculate difference between the two values
-                    y_diff = int(y2 - y)
-                    x_diff = int(x2 - x)
+                    y_diff = int(y2_point - y_point)
+                    x_diff = int(x2_point - x_point)
                     # Calculate using y_diff and x_diff
                     paste_coords = (x_diff, y_diff)
                     break
