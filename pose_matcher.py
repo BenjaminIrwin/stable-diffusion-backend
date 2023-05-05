@@ -145,7 +145,7 @@ class PoseVector:
         self.vector = vector
         self.original_size = original_size
         self.original_bb = original_bb
-        self.image = None
+        self.image = image
 
     def set_original_size(self):
         self.original_size = self.image.size
@@ -179,11 +179,11 @@ class PoseVector:
         if pose_vector.original_size is None:
             pose_vector.set_original_size()
         if pose_vector.original_bb is None:
-            pose_vector.get_bb()
+            pose_vector.set_bb()
         if self.original_size is None:
             self.set_original_size()
         if self.original_bb is None:
-            self.original_size()
+            self.set_bb()
 
 
         # Create an image the size of pose_vector.image
