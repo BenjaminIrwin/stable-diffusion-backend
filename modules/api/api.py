@@ -517,13 +517,14 @@ class Api:
                 b64images.append(neighbor_b64)
 
 
-                neighbor_image = apply_transformations(neighbor_image, transformations)
+                neighbor_images = apply_transformations(neighbor_image, transformations)
 
                 # Convert to base64 string without the header
-                neighbor_b64 = encode_pil_to_base64(neighbor_image)
+                for im in neighbor_images:
+                    neighbor_b64 = encode_pil_to_base64(im)
 
-                # Append to b64images
-                b64images.append(neighbor_b64)
+                    # Append to b64images
+                    b64images.append(neighbor_b64)
 
         if not img2imgreq.include_init_images:
             img2imgreq.init_images = None

@@ -47,6 +47,7 @@ from PIL import Image
 def apply_transformations(image, transformations):
     # Iterate through transformations where a transformation is in the format ("pad", pad_region) and a transformation can be "pad", "crop", or "resize"
     # Apply transformations to neighbor_image
+    images = []
     for transformation in transformations:
         # If transformation is a pad, apply the pad to the neighbor_image
         if transformation[0] == "pad":
@@ -64,17 +65,20 @@ def apply_transformations(image, transformations):
             # Paste the original image onto the new image, using the padding amounts to determine the position.
             new_image.paste(image, (pad_amount[0], pad_amount[1]))
             image = new_image
+            images.append(image)
         # If transformation is a crop, apply the crop to the neighbor_image
         elif transformation[0] == "crop":
             # Crop image
             print('Cropping image to ' + str(transformation[1]))
             image = image.crop(transformation[1])
+            images.append(image)
         # If transformation is a resize, apply the resize to the neighbor_image
         elif transformation[0] == "resize":
             # Resize image
             print('Resizing image to ' + str(transformation[1]))
             image = image.resize(transformation[1])
-    return image
+            images.append(image)
+    return images
 
 
 def normalise_input_image(image, vector):
