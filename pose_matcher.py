@@ -189,16 +189,42 @@ class PoseVector:
         # Create an image the size of pose_vector.image
         image = Image.new('RGBA', pose_vector.original_size, (0, 0, 0, 0))
 
+        width = (self.original_bb[2] - self.original_bb[0])
+        height = (self.original_bb[3] - self.original_bb[1])
+
         # Get difference in scale between the heights of the original_bbs
-        scale = (pose_vector.original_bb[3] - pose_vector.original_bb[1]) / (self.original_bb[3] - self.original_bb[1])
+        scale = (pose_vector.original_bb[3] - pose_vector.original_bb[1]) / height
+
+        # Add 0.35 padding to self.original_bb
+        pad = 0.35
+        bb_with_padding = [self.original_bb[0] - width * pad,
+                           self.original_bb[1] - height * pad,
+                           self.original_bb[2] + width * pad,
+                           self.original_bb[3] + height * pad]
+
+        # Check if crop_region bigger than image
+        if bb_with_padding[0] < 0:
+            bb_with_padding[0] = 0
+        if bb_with_padding[1] < 0:
+            bb_with_padding[1] = 0
+        if bb_with_padding[2] > image.width:
+            bb_with_padding[2] = image.width
+        if bb_with_padding[3] > image.height:
+            bb_with_padding[3] = image.height
+
 
         # Crop self.image to self.original_bb
-        min_image = self.image.crop(self.original_bb)
+        min_image = self.image.crop(bb_with_padding)
 
         # Scale crop
         min_image = min_image.resize((int(min_image.width * scale), int(min_image.height * scale)), Image.LANCZOS)
 
-        image.paste(min_image, (pose_vector.original_bb[0], pose_vector.original_bb[1]))
+        # Calculate paste_coords based on pose_vector.original_bb[0], pose_vector.original_bb[1] and padding
+        paste_coords = (min(0, int(pose_vector.original_bb[0] - (width * pad))),
+                        min(0, pose_vector.original_bb[1] - (height * pad)))
+
+
+        image.paste(min_image, paste_coords)
 
         return image
 
