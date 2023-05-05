@@ -206,9 +206,13 @@ class PoseVector:
             y = self.vector[i]
             x = self.vector[i - 1]
             if y is not None and x is not None:
+                print('Found y and x at index {}'.format(i))
+                print('y: {}, x: {}'.format(y, x))
                 y2 = pose_vector.vector[i]
                 x2 = pose_vector.vector[i - 1]
                 if y2 is not None and x2 is not None:
+                    print('Found y2 and x2 at index {}'.format(i))
+                    print('y2: {}, x2: {}'.format(y2, x2))
                     # Calculate difference between the two values
                     y_diff = int(y2 - y)
                     x_diff = int(x2 - x)
