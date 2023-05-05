@@ -187,7 +187,7 @@ class PoseVector:
 
 
         # Create an image the size of pose_vector.image
-        image = Image.new('RGBA', pose_vector.original_size, (0, 0, 0, 0))
+        new_image = Image.new('RGBA', pose_vector.original_size, (0, 0, 0, 0))
 
         width = (self.original_bb[2] - self.original_bb[0])
         height = (self.original_bb[3] - self.original_bb[1])
@@ -196,7 +196,7 @@ class PoseVector:
         scale = (pose_vector.original_bb[3] - pose_vector.original_bb[1]) / height
 
         # Resize image to match the height of pose_vector.image
-        min_image = image.resize((int(width * scale), int(height * scale)), Image.LANCZOS)
+        scaled_image = self.image.resize((int(width * scale), int(height * scale)), Image.LANCZOS)
 
         paste_coords = (0, 0)
 
@@ -214,8 +214,8 @@ class PoseVector:
                     print('Found y2 and x2 at index {}'.format(i))
                     print('y2: {}, x2: {}'.format(y2, x2))
 
-                    x_point = int(x * self.original_size[0])
-                    y_point = int(y * self.original_size[1])
+                    x_point = int(x * scaled_image.size[0])
+                    y_point = int(y * scaled_image.size[1])
 
                     x2_point = int(x2 * pose_vector.original_size[0])
                     y2_point = int(y2 * pose_vector.original_size[1])
@@ -228,11 +228,11 @@ class PoseVector:
                     break
 
 
-        print('Pasting image with size {} at coords {}'.format(min_image.size, paste_coords))
+        print('Pasting image with size {} at coords {}'.format(scaled_image.size, paste_coords))
 
-        image.paste(min_image, paste_coords)
+        new_image.paste(scaled_image, paste_coords)
 
-        return image
+        return new_image
 
 
 
