@@ -52,8 +52,19 @@ def apply_transformations(image, transformations):
     for transformation in transformations:
         # If transformation is a pad, apply the pad to the neighbor_image
         if transformation[0] == "pad":
-            # Apply padding
-            image = ImageOps.expand(image, border=transformation[1], fill=0)
+            pad_amount = transformation[1]
+            # Compute the new size of the image, including the padding.
+            new_size = (
+                image.width + pad_amount[0] + pad_amount[2],
+                image.height + pad_amount[1] + pad_amount[3]
+            )
+
+            # Create a new image with the desired size and a transparent background.
+            mode = 'RGBA' if 'A' in image.getbands() else 'RGB'
+            new_image = Image.new(mode, new_size, (0, 0, 0, 0))
+
+            # Paste the original image onto the new image, using the padding amounts to determine the position.
+            new_image.paste(image, (pad_amount[0], pad_amount[1]))
         # If transformation is a crop, apply the crop to the neighbor_image
         elif transformation[0] == "crop":
             # Crop image
