@@ -189,43 +189,45 @@ class PoseVector:
         # Create an image the size of pose_vector.image
         new_image = Image.new('RGBA', pose_vector.original_size, (0, 0, 0, 0))
 
-        width = (self.original_bb[2] - self.original_bb[0])
-        height = (self.original_bb[3] - self.original_bb[1])
-
         # Get difference in scale between the heights of the original_bbs
-        scale = (pose_vector.original_bb[3] - pose_vector.original_bb[1]) / height
+        scale = (pose_vector.original_bb[3] - pose_vector.original_bb[1]) / (self.original_bb[3] - self.original_bb[1])
 
         # Resize image using scale
         scaled_image = self.image.resize((int(self.image.width * scale), int(self.image.height * scale)), Image.LANCZOS)
 
-        paste_coords = (0, 0)
+        y_diff = pose_vector.original_bb[1] - self.original_bb[1]
+        x_diff = pose_vector.original_bb[0] - self.original_bb[0]
+
+        paste_coords = (x_diff, y_diff)
+
+
 
         # Iterate backwards through the vectors in increments of 3 and when you find a value which is not None for both, calculate the
         # difference between the two values and use that to calculate the paste_coords
-        for i in range(len(self.vector) -1, -1, -3):
-            y = self.vector[i]
-            x = self.vector[i - 1]
-            if y is not None and x is not None:
-                print('Found y and x at index {}'.format(i))
-                print('y: {}, x: {}'.format(y, x))
-                y2 = pose_vector.vector[i]
-                x2 = pose_vector.vector[i - 1]
-                if y2 is not None and x2 is not None:
-                    print('Found y2 and x2 at index {}'.format(i))
-                    print('y2: {}, x2: {}'.format(y2, x2))
-
-                    x_point = int(x * scaled_image.size[0])
-                    y_point = int(y * scaled_image.size[1])
-
-                    x2_point = int(x2 * pose_vector.original_size[0])
-                    y2_point = int(y2 * pose_vector.original_size[1])
-
-                    # Calculate difference between the two values
-                    y_diff = int(y2_point - y_point)
-                    x_diff = int(x2_point - x_point)
-                    # Calculate using y_diff and x_diff
-                    paste_coords = (x_diff, y_diff)
-                    break
+        # for i in range(len(self.vector) -1, -1, -3):
+        #     y = self.vector[i]
+        #     x = self.vector[i - 1]
+        #     if y is not None and x is not None:
+        #
+        #         y2 = pose_vector.vector[i]
+        #         x2 = pose_vector.vector[i - 1]
+        #         if y2 is not None and x2 is not None:
+        #
+        #             x_point = int(x * scaled_image.size[0])
+        #             y_point = int(y * scaled_image.size[1])
+        #
+        #             x2_point = int(x2 * pose_vector.original_size[0])
+        #             y2_point = int(y2 * pose_vector.original_size[1])
+        #
+        #             print('x_point: {}, y_point: {}'.format(x_point, y_point))
+        #             print('x2_point: {}, y2_point: {}'.format(x2_point, y2_point))
+        #
+        #             # Calculate difference between the two values
+        #             y_diff = int(y2_point - y_point)
+        #             x_diff = int(x2_point - x_point)
+        #             # Calculate using y_diff and x_diff
+        #             paste_coords = (x_diff, y_diff)
+        #             break
 
 
         print('Pasting image with size {} at coords {}'.format(scaled_image.size, paste_coords))
