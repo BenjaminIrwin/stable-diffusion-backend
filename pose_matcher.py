@@ -68,7 +68,7 @@ def normalise_input_image(image, vector):
         return None
 
     og_size = image.size
-    og_bounding_box = [minX, minY, maxX, maxY]
+    og_bounding_box = [int(minX), int(minY), int(maxX), int(maxY)]
 
     # Add 35% padding to crop region
     width = maxX - minX
