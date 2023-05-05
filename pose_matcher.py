@@ -173,7 +173,7 @@ class PoseVector:
         if minX is None or minY is None or maxX is None or maxY is None:
             return None
 
-        self.original_bb = [minX, minY, maxX, maxY]
+        self.original_bb = [int(minX), int(minY), int(maxX), int(maxY)]
 
     def align_to_vector(self, pose_vector):
         if pose_vector.original_size is None:
@@ -193,12 +193,12 @@ class PoseVector:
         scale = (pose_vector.original_bb[3] - pose_vector.original_bb[1]) / (self.original_bb[3] - self.original_bb[1])
 
         # Crop self.image to self.original_bb
-        crop = self.image.crop(self.original_bb)
+        min_image = self.image.crop(self.original_bb)
 
         # Scale crop
-        crop = crop.resize((int(crop.width * scale), int(crop.height * scale)), Image.LANCZOS)
+        min_image = min_image.resize((int(min_image.width * scale), int(min_image.height * scale)), Image.LANCZOS)
 
-        image.paste(crop, (pose_vector.original_bb[0], pose_vector.original_bb[1]))
+        image.paste(min_image, (pose_vector.original_bb[0], pose_vector.original_bb[1]))
 
         return image
 
