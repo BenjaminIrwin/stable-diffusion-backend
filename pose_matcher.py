@@ -195,8 +195,8 @@ class PoseVector:
         # Get difference in scale between the heights of the original_bbs
         scale = (pose_vector.original_bb[3] - pose_vector.original_bb[1]) / height
 
-        # Resize image to match the height of pose_vector.image
-        scaled_image = self.image.resize((int(width * scale), int(height * scale)), Image.LANCZOS)
+        # Resize image using scale
+        scaled_image = self.image.resize((int(self.image.width * scale), int(self.image.height * scale)), Image.LANCZOS)
 
         paste_coords = (0, 0)
 
