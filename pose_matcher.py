@@ -158,8 +158,8 @@ class PoseVector:
         for i in range(0, len(self.vector), 3):
             if self.vector[i + 2] is None:
                 continue
-            x = self.vector[i] * self.vector.image.width
-            y = self.vector[i + 1] * self.vector.image.height
+            x = self.vector[i] * self.original_size.width
+            y = self.vector[i + 1] * self.original_size.height
             if minX is None or x < minX:
                 minX = x
             if minY is None or y < minY:
