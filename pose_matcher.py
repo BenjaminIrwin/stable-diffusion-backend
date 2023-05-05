@@ -45,13 +45,12 @@ from PIL import Image
 
 
 def apply_transformations(image, transformations):
-    print('Applying transformations to image')
-    print(transformations)
     # Iterate through transformations where a transformation is in the format ("pad", pad_region) and a transformation can be "pad", "crop", or "resize"
     # Apply transformations to neighbor_image
     for transformation in transformations:
         # If transformation is a pad, apply the pad to the neighbor_image
         if transformation[0] == "pad":
+            print('Padding image by ' + str(transformation[1]))
             pad_amount = transformation[1]
             # Compute the new size of the image, including the padding.
             new_size = (
@@ -64,13 +63,16 @@ def apply_transformations(image, transformations):
 
             # Paste the original image onto the new image, using the padding amounts to determine the position.
             new_image.paste(image, (pad_amount[0], pad_amount[1]))
+            image = new_image
         # If transformation is a crop, apply the crop to the neighbor_image
         elif transformation[0] == "crop":
             # Crop image
+            print('Cropping image to ' + str(transformation[1]))
             image = image.crop(transformation[1])
         # If transformation is a resize, apply the resize to the neighbor_image
         elif transformation[0] == "resize":
             # Resize image
+            print('Resizing image to ' + str(transformation[1]))
             image = image.resize(transformation[1])
     return image
 
