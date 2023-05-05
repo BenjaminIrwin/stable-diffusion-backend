@@ -222,8 +222,7 @@ class PoseVector:
         paste_coords = (int(min(0, int(pose_vector.original_bb[0] - (width * pad)))),
                         int(min(0, pose_vector.original_bb[1] - (height * pad))))
 
-        # Make paste coords int
-
+        print('Pasting image with size {} at coords {}'.format(min_image.size, paste_coords))
 
         image.paste(min_image, paste_coords)
 
