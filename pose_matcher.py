@@ -33,11 +33,11 @@ def get_image_open_pose(image):
                     return_is_index=True)
     print('GENERATED OPEN_POSE')
     print(open_pose)
-    normalised_image = normalise_input_image(image, open_pose['0'])
+    normalised_image = normalise_input_image(image, open_pose.get(0))
     normalised_open_pose = \
     open_pose_model(np.array(normalised_image.convert('RGB')), include_body=True, include_hand=False,
                     include_face=False,
-                    return_is_index=True)['0']
+                    return_is_index=True).get(0)
     return normalised_open_pose
 
 

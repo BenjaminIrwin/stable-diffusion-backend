@@ -83,9 +83,6 @@ class OpenposeDetector:
         H, W, C = oriImg.shape
         with torch.no_grad():
             candidate, subset = self.body_estimation(oriImg)
-            print('BODY ESTIMATE')
-            print(candidate)
-            print(subset)
             hands = []
             faces = []
             if include_hand:
