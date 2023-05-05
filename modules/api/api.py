@@ -504,8 +504,16 @@ class Api:
         for image in processed.images:
             pose_vector = get_image_pose_vector(image)
             nearest_neighbors = vp_tree.get_n_nearest_neighbors(pose_vector, 8)
-            print(nearest_neighbors)
-            # b64images.append(nearest_neighbors)
+            for n in nearest_neighbors:
+                neighbor_id = n[1].id
+                # Open image from cutouts/people/ppl_{id}.png
+                neighbor_image = Image.open(f"cutouts/people/ppl_{neighbor_id}.png")
+
+                # Convert to base64 string without the header
+                neighbor_b64 = encode_pil_to_base64(neighbor_image)
+
+                # Append to b64images
+                b64images.append(neighbor_b64)
 
         if not img2imgreq.include_init_images:
             img2imgreq.init_images = None
