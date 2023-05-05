@@ -41,28 +41,24 @@ def get_image_open_pose(image):
     return normalised_open_pose
 
 
-def normalise_input_image(image, open_pose):
+def normalise_input_image(image, vector):
     minX = None
     minY = None
     maxX = None
     maxY = None
-    # Iterate through every entry in open_pose dict
-    for key in open_pose.keys():
-        points = open_pose[key]
-        # Iterate through points in format (x1, y1, c1, x2, y2, c2, ...)
-        for i in range(0, len(points), 3):
-            if points[i + 2] is None:
-                continue
-            x = points[i] * image.width
-            y = points[i + 1] * image.height
-            if minX is None or x < minX:
-                minX = x
-            if minY is None or y < minY:
-                minY = y
-            if maxX is None or x > maxX:
-                maxX = x
-            if maxY is None or y > maxY:
-                maxY = y
+    for i in range(0, len(vector), 3):
+        if vector[i + 2] is None:
+            continue
+        x = vector[i] * image.width
+        y = vector[i + 1] * image.height
+        if minX is None or x < minX:
+            minX = x
+        if minY is None or y < minY:
+            minY = y
+        if maxX is None or x > maxX:
+            maxX = x
+        if maxY is None or y > maxY:
+            maxY = y
 
     # Check if minX, minY, maxX, maxY are None
     if minX is None or minY is None or maxX is None or maxY is None:
