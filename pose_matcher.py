@@ -1,7 +1,7 @@
 import json
 
 import numpy as np
-from PIL import Image
+from PIL import Image, ImageOps
 from transformers import DPRQuestionEncoder, DPRQuestionEncoderTokenizer
 import vptree
 from datasets import load_dataset, Dataset
@@ -33,15 +33,39 @@ def get_image_pose_vector(image):
                     return_is_index=True)
     print('GENERATED OPEN_POSE')
     print(open_pose)
-    normalised_image = normalise_input_image(image, open_pose.get(0))
+    normalised_image, reverse_transformations = normalise_input_image(image, open_pose.get(0))
     normalised_open_pose = \
     open_pose_model(np.array(normalised_image.convert('RGB')), include_body=True, include_hand=False,
                     include_face=False,
                     return_is_index=True).get(0)
-    return PoseVector(vector=normalised_open_pose)
+    return PoseVector(vector=normalised_open_pose), reverse_transformations
+
+
+from PIL import Image
+
+
+def apply_transformations(image, transformations):
+    # Iterate through transformations where a transformation is in the format ("pad", pad_region) and a transformation can be "pad", "crop", or "resize"
+    # Apply transformations to neighbor_image
+    for transformation in transformations:
+        # If transformation is a pad, apply the pad to the neighbor_image
+        if transformation[0] == "pad":
+            # Apply padding
+            image = ImageOps.expand(image, border=transformation[1], fill=0)
+        # If transformation is a crop, apply the crop to the neighbor_image
+        elif transformation[0] == "crop":
+            # Crop image
+            image = image.crop(transformation[1])
+        # If transformation is a resize, apply the resize to the neighbor_image
+        elif transformation[0] == "resize":
+            # Resize image
+            image = image.resize(transformation[1])
+    return image
 
 
 def normalise_input_image(image, vector):
+    reverse_transformations = []
+
     minX = None
     minY = None
     maxX = None
@@ -81,6 +105,11 @@ def normalise_input_image(image, vector):
 
     # Crop image
     image = image.crop((crop_region[0], crop_region[1], crop_region[2], crop_region[3]))
+    pad_region = [crop_region[0], crop_region[1], image.width - crop_region[2], image.height - crop_region[3]]
+    reverse_transformations.append(("pad", pad_region))
+
+
+    # reverse_transformations.append(("pad",
 
     # Pad smaller dimension to make image square
     width = image.width
@@ -93,6 +122,8 @@ def normalise_input_image(image, vector):
         image_new = Image.new('RGBA', (width, width), (0, 0, 0, 0))
         image_new.paste(image, (0, padding))
         image = image_new
+        # left, upper, right, and lower pixel
+        reverse_transformations.append(("crop", (0, padding, image.width, image.height - padding)))
     elif height > width:
         # Get padding
         padding = (height - width) // 2
@@ -100,9 +131,15 @@ def normalise_input_image(image, vector):
         image_new = Image.new('RGBA', (height, height), (0, 0, 0, 0))
         image_new.paste(image, (padding, 0))
         image = image_new
+        reverse_transformations.append(("crop", (padding, 0, image.width - padding, image.height)))
+
 
     # Resize image to 768x768 using lanczos filter
-    return image.resize((768, 768), Image.LANCZOS)
+    image_resized = image.resize((768, 768), Image.LANCZOS)
+    reverse_transformations.append(("resize", (image.width, image.height)))
+
+
+    return image_resized, reverse_transformations
 
 
 def get_vp_tree(action, number_people):

@@ -30,7 +30,7 @@ from google.cloud import firestore as gfirestore
 from gradio.processing_utils import decode_base64_to_file
 from make_a_hole_in_image import make_a_hole_in_image
 from modules.s3 import upload_base64_file, upload_base64_files
-from pose_matcher import get_vp_tree, get_image_pose_vector
+from pose_matcher import get_vp_tree, get_image_pose_vector, apply_transformations
 from prompt_gen import people_prompt_gen
 
 import modules.shared as shared
@@ -503,12 +503,21 @@ class Api:
 
         for image in processed.images:
             b64images.append(encode_pil_to_base64(image))
-            pose_vector = get_image_pose_vector(image)
+            pose_vector, transformations = get_image_pose_vector(image)
             nearest_neighbors = vp_tree.get_n_nearest_neighbors(pose_vector, 8)
             for n in nearest_neighbors:
                 neighbor_id = n[1].id
                 # Open image from cutouts/people/ppl_{id}.png
                 neighbor_image = Image.open(f"cutouts/people/ppl_{neighbor_id}.png")
+
+                # Convert to base64 string without the header
+                neighbor_b64 = encode_pil_to_base64(neighbor_image)
+
+                # Append to b64images
+                b64images.append(neighbor_b64)
+
+
+                neighbor_image = apply_transformations(neighbor_image, transformations)
 
                 # Convert to base64 string without the header
                 neighbor_b64 = encode_pil_to_base64(neighbor_image)
