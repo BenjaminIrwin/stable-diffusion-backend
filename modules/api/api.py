@@ -502,6 +502,7 @@ class Api:
         b64images = []
 
         for image in processed.images:
+            b64images.append(encode_pil_to_base64(image))
             pose_vector = get_image_pose_vector(image)
             nearest_neighbors = vp_tree.get_n_nearest_neighbors(pose_vector, 8)
             for n in nearest_neighbors:
