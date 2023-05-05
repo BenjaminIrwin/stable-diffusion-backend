@@ -103,26 +103,28 @@ def get_vp_tree(action, number_people):
     # Get id, pose_data columns
     pose_data = df[['id', 'pose_data']].values.tolist()
 
-    keypoints = []
+    pose_vectors = []
 
     print('Loading keypoints...')
 
     # Iterate through every row of pose_data
     for row in pose_data:
         # Create keypoint object
-        keypoint_object = keypoint(row[0], json.loads(row[1]).get('0'))
-        # Append keypoint object to keypoints list
-        keypoints.append(keypoint_object)
+        vector = json.loads(row[1]).get('0')
+        if vector is not None:
+            pose_vector_object = PoseVector(row[0], vector)
+            # Append keypoint object to keypoints list
+            pose_vectors.append(pose_vector_object)
 
     print('Creating VPTree...')
 
-    return vptree.VPTree(keypoints, weightedDistanceMatching)
+    return vptree.VPTree(pose_vectors, weightedDistanceMatching)
 
 
-class keypoint:
-    def __init__(self, id, poseVector):
+class PoseVector:
+    def __init__(self, id, vector):
         self.id = id
-        self.poseVector = poseVector
+        self.poseVector = vector
 
 
 def parse_pose_vector(poseVector):
