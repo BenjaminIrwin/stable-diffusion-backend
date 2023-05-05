@@ -195,8 +195,11 @@ class PoseVector:
         # Resize image using scale
         scaled_image = self.image.resize((int(self.image.width * scale), int(self.image.height * scale)), Image.LANCZOS)
 
-        y_diff = pose_vector.original_bb[1] - self.original_bb[1]
-        x_diff = pose_vector.original_bb[0] - self.original_bb[0]
+        # Calculate new bounding box given the scale
+        new_bb = [int(self.original_bb[0] * scale), int(self.original_bb[1] * scale), int(self.original_bb[2] * scale), int(self.original_bb[3] * scale)]
+
+        y_diff = pose_vector.original_bb[1] - new_bb[1]
+        x_diff = pose_vector.original_bb[0] - new_bb[0]
 
         paste_coords = (x_diff, y_diff)
 
