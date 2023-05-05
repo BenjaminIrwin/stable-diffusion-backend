@@ -202,7 +202,7 @@ class PoseVector:
 
         # Iterate backwards through the vectors in increments of 3 and when you find a value which is not None for both, calculate the
         # difference between the two values and use that to calculate the paste_coords
-        for i in range(len(self.vector), -1, -3):
+        for i in range(len(self.vector) -1, -1, -3):
             y = self.vector[i]
             x = self.vector[i - 1]
             if y is not None and x is not None:
