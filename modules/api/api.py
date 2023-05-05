@@ -11,9 +11,6 @@ from typing import Callable
 
 import numpy as np
 
-from annotator.openpose import OpenposeDetector
-open_pose_model = OpenposeDetector()
-
 import firebase_admin
 import gradio as gr
 import piexif
@@ -33,7 +30,7 @@ from google.cloud import firestore as gfirestore
 from gradio.processing_utils import decode_base64_to_file
 from make_a_hole_in_image import make_a_hole_in_image
 from modules.s3 import upload_base64_file, upload_base64_files
-from pose_matcher import get_vp_tree
+from pose_matcher import get_vp_tree, get_image_open_pose
 from prompt_gen import people_prompt_gen
 
 import modules.shared as shared
@@ -505,12 +502,10 @@ class Api:
         b64images = []
 
         for image in processed.images:
-            # Get point by doing openpose
-            point = open_pose_model(np.array(image.convert('RGB')), include_body=True, include_hand=False, include_face=False, return_is_index=True)['0']
-            b64images.append(vp_tree.get_n_nearest_neighbors(point, 8))
-
-
-
+            open_pose = get_image_open_pose(image)
+            nearest_neighbors = vp_tree.get_n_nearest_neighbors(open_pose, 8)
+            print(nearest_neighbors)
+            b64images.append(nearest_neighbors)
 
         if not img2imgreq.include_init_images:
             img2imgreq.init_images = None
