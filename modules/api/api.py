@@ -30,7 +30,7 @@ from google.cloud import firestore as gfirestore
 from gradio.processing_utils import decode_base64_to_file
 from make_a_hole_in_image import make_a_hole_in_image
 from modules.s3 import upload_base64_file, upload_base64_files
-from pose_matcher import get_vp_tree, get_image_open_pose
+from pose_matcher import get_vp_tree, get_image_pose_vector
 from prompt_gen import people_prompt_gen
 
 import modules.shared as shared
@@ -502,10 +502,10 @@ class Api:
         b64images = []
 
         for image in processed.images:
-            open_pose = get_image_open_pose(image)
-            nearest_neighbors = vp_tree.get_n_nearest_neighbors(open_pose, 8)
+            pose_vector = get_image_pose_vector(image)
+            nearest_neighbors = vp_tree.get_n_nearest_neighbors(pose_vector, 8)
             print(nearest_neighbors)
-            b64images.append(nearest_neighbors)
+            # b64images.append(nearest_neighbors)
 
         if not img2imgreq.include_init_images:
             img2imgreq.init_images = None

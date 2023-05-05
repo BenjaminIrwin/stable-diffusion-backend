@@ -18,7 +18,7 @@ q_encoder = DPRQuestionEncoder.from_pretrained("facebook/dpr-question_encoder-si
 q_tokenizer = DPRQuestionEncoderTokenizer.from_pretrained("facebook/dpr-question_encoder-single-nq-base")
 
 
-def get_image_open_pose(image):
+def get_image_pose_vector(image):
 
     # Convert image to base64
     print('IMAGE STRING')
@@ -38,7 +38,7 @@ def get_image_open_pose(image):
     open_pose_model(np.array(normalised_image.convert('RGB')), include_body=True, include_hand=False,
                     include_face=False,
                     return_is_index=True).get(0)
-    return normalised_open_pose
+    return PoseVector(vector=normalised_open_pose)
 
 
 def normalise_input_image(image, vector):
@@ -131,7 +131,7 @@ def get_vp_tree(action, number_people):
 
 
 class PoseVector:
-    def __init__(self, id, vector):
+    def __init__(self, id=None, vector=None):
         self.id = id
         self.poseVector = vector
 
