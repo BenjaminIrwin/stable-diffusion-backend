@@ -17,7 +17,6 @@ open_pose_model = OpenposeDetector()
 q_encoder = DPRQuestionEncoder.from_pretrained("facebook/dpr-question_encoder-single-nq-base")
 q_tokenizer = DPRQuestionEncoderTokenizer.from_pretrained("facebook/dpr-question_encoder-single-nq-base")
 
-
 def get_image_pose_vector(image):
 
     # Convert image to base64
@@ -33,56 +32,18 @@ def get_image_pose_vector(image):
                     return_is_index=True)
     print('GENERATED OPEN_POSE')
     print(open_pose)
-    normalised_image, reverse_transformations = normalise_input_image(image, open_pose.get(0))
+    normalised_image, og_size, og_bounding_box = normalise_input_image(image, open_pose.get(0))
     normalised_open_pose = \
     open_pose_model(np.array(normalised_image.convert('RGB')), include_body=True, include_hand=False,
                     include_face=False,
                     return_is_index=True).get(0)
-    return PoseVector(vector=normalised_open_pose), reverse_transformations
+    return PoseVector(vector=normalised_open_pose, image=image, original_size=og_size, original_bb=og_bounding_box)
 
 
 from PIL import Image
 
 
-def apply_transformations(image, transformations):
-    # Iterate through transformations where a transformation is in the format ("pad", pad_region) and a transformation can be "pad", "crop", or "resize"
-    # Apply transformations to neighbor_image
-    images = []
-    for transformation in transformations:
-        # If transformation is a pad, apply the pad to the neighbor_image
-        if transformation[0] == "pad":
-            print('Padding image by ' + str(transformation[1]))
-            pad_amount = transformation[1]
-            # Compute the new size of the image, including the padding.
-            new_size = (
-                int(image.width + pad_amount[0] + pad_amount[2]),
-                int(image.height + pad_amount[1] + pad_amount[3])
-            )
-
-            # Create a new image with the desired size and a transparent background.
-            new_image = Image.new('RGBA', new_size, (0, 0, 0, 0))
-
-            # Paste the original image onto the new image, using the padding amounts to determine the position.
-            new_image.paste(image, (pad_amount[0], pad_amount[1]))
-            image = new_image
-            images.append(image)
-        # If transformation is a crop, apply the crop to the neighbor_image
-        elif transformation[0] == "crop":
-            # Crop image
-            print('Cropping image to ' + str(transformation[1]))
-            image = image.crop(transformation[1])
-            images.append(image)
-        # If transformation is a resize, apply the resize to the neighbor_image
-        elif transformation[0] == "resize":
-            # Resize image
-            print('Resizing image to ' + str(transformation[1]))
-            image = image.resize(transformation[1])
-            images.append(image)
-    return images
-
-
 def normalise_input_image(image, vector):
-    reverse_transformations = []
 
     minX = None
     minY = None
@@ -106,6 +67,9 @@ def normalise_input_image(image, vector):
     if minX is None or minY is None or maxX is None or maxY is None:
         return None
 
+    og_size = image.size
+    og_bounding_box = [minX, minY, maxX, maxY]
+
     # Add 35% padding to crop region
     width = maxX - minX
     height = maxY - minY
@@ -123,10 +87,6 @@ def normalise_input_image(image, vector):
 
     # Crop image
     image = image.crop((crop_region[0], crop_region[1], crop_region[2], crop_region[3]))
-    pad_region = [int(crop_region[0]), int(crop_region[1]), int(image.width - crop_region[2]), int(image.height - crop_region[3])]
-    reverse_transformations.append(("pad", pad_region))
-
-    # reverse_transformations.append(("pad",
 
     # Pad smaller dimension to make image square
     width = image.width
@@ -139,9 +99,6 @@ def normalise_input_image(image, vector):
         image_new = Image.new('RGBA', (width, width), (0, 0, 0, 0))
         image_new.paste(image, (0, padding))
         image = image_new
-        # reverse_transformations.append(("crop", (0, padding, image.width, image.height - padding)))
-        # Add transformation to the front of the reverse_transformations list
-        reverse_transformations.insert(0, ("crop", (0, padding, image.width, image.height - padding)))
     elif height > width:
         # Get padding
         padding = (height - width) // 2
@@ -149,15 +106,12 @@ def normalise_input_image(image, vector):
         image_new = Image.new('RGBA', (height, height), (0, 0, 0, 0))
         image_new.paste(image, (padding, 0))
         image = image_new
-        reverse_transformations.insert(0, ("crop", (padding, 0, image.width - padding, image.height)))
 
 
     # Resize image to 768x768 using lanczos filter
     image_resized = image.resize((768, 768), Image.LANCZOS)
-    reverse_transformations.insert(0, ("resize", (image.width, image.height)))
 
-
-    return image_resized, reverse_transformations
+    return image_resized, og_size, og_bounding_box
 
 
 def get_vp_tree(action, number_people):
@@ -186,9 +140,70 @@ def get_vp_tree(action, number_people):
 
 
 class PoseVector:
-    def __init__(self, id=None, vector=None):
+    def __init__(self, id=None, vector=None, image=None, original_size=None, original_bb=None):
         self.id = id
-        self.poseVector = vector
+        self.vector = vector
+        self.original_size = original_size
+        self.original_bb = original_bb
+        self.image = None
+
+    def set_original_size(self):
+        self.original_size = self.image.size
+
+    def set_bb(self):
+        minX = None
+        minY = None
+        maxX = None
+        maxY = None
+        for i in range(0, len(self.vector), 3):
+            if self.vector[i + 2] is None:
+                continue
+            x = self.vector[i] * self.vector.image.width
+            y = self.vector[i + 1] * self.vector.image.height
+            if minX is None or x < minX:
+                minX = x
+            if minY is None or y < minY:
+                minY = y
+            if maxX is None or x > maxX:
+                maxX = x
+            if maxY is None or y > maxY:
+                maxY = y
+
+        # Check if minX, minY, maxX, maxY are None
+        if minX is None or minY is None or maxX is None or maxY is None:
+            return None
+
+        self.original_bb = [minX, minY, maxX, maxY]
+
+    def align_to_vector(self, pose_vector):
+        if pose_vector.original_size is None:
+            pose_vector.set_original_size()
+        if pose_vector.original_bb is None:
+            pose_vector.get_bb()
+        if self.original_size is None:
+            self.set_original_size()
+        if self.original_bb is None:
+            self.original_size()
+
+
+        # Create an image the size of pose_vector.image
+        image = Image.new('RGBA', pose_vector.original_size, (0, 0, 0, 0))
+
+        # Get difference in scale between the heights of the original_bbs
+        scale = (pose_vector.original_bb[3] - pose_vector.original_bb[1]) / (self.original_bb[3] - self.original_bb[1])
+
+        # Crop self.image to self.original_bb
+        crop = self.image.crop(self.original_bb)
+
+        # Scale crop
+        crop = crop.resize((int(crop.width * scale), int(crop.height * scale)), Image.LANCZOS)
+
+        image.paste(crop, (pose_vector.original_bb[0], pose_vector.original_bb[1]))
+
+        return image
+
+
+
 
 
 def parse_pose_vector(poseVector):
@@ -217,8 +232,8 @@ def parse_pose_vector(poseVector):
 
 # Define distance function.
 def weightedDistanceMatching(poseVector1, poseVector2):
-    vector1PoseXY, vector1Confidences, vector1ConfidenceSum = parse_pose_vector(poseVector1.poseVector)
-    vector2PoseXY, vector2Confidences, vector2ConfidenceSum = parse_pose_vector(poseVector2.poseVector)
+    vector1PoseXY, vector1Confidences, vector1ConfidenceSum = parse_pose_vector(poseVector1.vector)
+    vector2PoseXY, vector2Confidences, vector2ConfidenceSum = parse_pose_vector(poseVector2.vector)
 
     # First summation
     summation1 = 1 / vector1ConfidenceSum
