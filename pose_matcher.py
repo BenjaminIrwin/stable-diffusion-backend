@@ -195,32 +195,15 @@ class PoseVector:
         # Get difference in scale between the heights of the original_bbs
         scale = (pose_vector.original_bb[3] - pose_vector.original_bb[1]) / height
 
-        # Add 0.35 padding to self.original_bb
-        pad = 0.35
-        bb_with_padding = [self.original_bb[0] - width * pad,
-                           self.original_bb[1] - height * pad,
-                           self.original_bb[2] + width * pad,
-                           self.original_bb[3] + height * pad]
+        # Resize image to match the height of pose_vector.image
+        min_image = image.resize((int(width * scale), int(height * scale)), Image.LANCZOS)
 
-        # Check if crop_region bigger than image
-        if bb_with_padding[0] < 0:
-            bb_with_padding[0] = 0
-        if bb_with_padding[1] < 0:
-            bb_with_padding[1] = 0
-        if bb_with_padding[2] > image.width:
-            bb_with_padding[2] = image.width
-        if bb_with_padding[3] > image.height:
-            bb_with_padding[3] = image.height
+        # Find where the feet of each area
 
-        # Crop self.image to self.original_bb
-        min_image = self.image.crop(bb_with_padding)
+        # Get x and y difference between feet positions
 
-        # Scale crop
-        min_image = min_image.resize((int(min_image.width * scale), int(min_image.height * scale)), Image.LANCZOS)
-
-        # Calculate paste_coords based on pose_vector.original_bb[0], pose_vector.original_bb[1] and padding
-        paste_coords = (int(min(0, int(pose_vector.original_bb[0] - (width * pad)))),
-                        int(min(0, pose_vector.original_bb[1] - (height * pad))))
+        # Calculate paste_coords such that the feet of the two images are aligned
+        paste_coords =
 
         print('Pasting image with size {} at coords {}'.format(min_image.size, paste_coords))
 
