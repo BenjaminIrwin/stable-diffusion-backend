@@ -117,7 +117,7 @@ def normalise_input_image(image, vector):
 
     # Crop image
     image = image.crop((crop_region[0], crop_region[1], crop_region[2], crop_region[3]))
-    pad_region = [crop_region[0], crop_region[1], image.width - crop_region[2], image.height - crop_region[3]]
+    pad_region = [int(crop_region[0]), int(crop_region[1]), int(image.width - crop_region[2]), int(image.height - crop_region[3])]
     reverse_transformations.append(("pad", pad_region))
 
     # reverse_transformations.append(("pad",
