@@ -45,6 +45,8 @@ from PIL import Image
 
 
 def apply_transformations(image, transformations):
+    print('Applying transformations to image')
+    print(transformations)
     # Iterate through transformations where a transformation is in the format ("pad", pad_region) and a transformation can be "pad", "crop", or "resize"
     # Apply transformations to neighbor_image
     for transformation in transformations:
@@ -108,7 +110,6 @@ def normalise_input_image(image, vector):
     pad_region = [crop_region[0], crop_region[1], image.width - crop_region[2], image.height - crop_region[3]]
     reverse_transformations.append(("pad", pad_region))
 
-
     # reverse_transformations.append(("pad",
 
     # Pad smaller dimension to make image square
@@ -122,8 +123,9 @@ def normalise_input_image(image, vector):
         image_new = Image.new('RGBA', (width, width), (0, 0, 0, 0))
         image_new.paste(image, (0, padding))
         image = image_new
-        # left, upper, right, and lower pixel
-        reverse_transformations.append(("crop", (0, padding, image.width, image.height - padding)))
+        # reverse_transformations.append(("crop", (0, padding, image.width, image.height - padding)))
+        # Add transformation to the front of the reverse_transformations list
+        reverse_transformations.insert(0, ("crop", (0, padding, image.width, image.height - padding)))
     elif height > width:
         # Get padding
         padding = (height - width) // 2
@@ -131,12 +133,12 @@ def normalise_input_image(image, vector):
         image_new = Image.new('RGBA', (height, height), (0, 0, 0, 0))
         image_new.paste(image, (padding, 0))
         image = image_new
-        reverse_transformations.append(("crop", (padding, 0, image.width - padding, image.height)))
+        reverse_transformations.insert(0, ("crop", (padding, 0, image.width - padding, image.height)))
 
 
     # Resize image to 768x768 using lanczos filter
     image_resized = image.resize((768, 768), Image.LANCZOS)
-    reverse_transformations.append(("resize", (image.width, image.height)))
+    reverse_transformations.insert(0, ("resize", (image.width, image.height)))
 
 
     return image_resized, reverse_transformations
