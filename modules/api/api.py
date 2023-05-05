@@ -30,7 +30,7 @@ from google.cloud import firestore as gfirestore
 from gradio.processing_utils import decode_base64_to_file
 from make_a_hole_in_image import make_a_hole_in_image
 from modules.s3 import upload_base64_file, upload_base64_files
-from pose_matcher import get_vp_tree, get_image_pose_vector, apply_transformations
+from pose_matcher import get_vp_tree, get_image_pose_vector
 from prompt_gen import people_prompt_gen
 
 import modules.shared as shared
