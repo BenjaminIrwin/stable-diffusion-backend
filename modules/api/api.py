@@ -441,7 +441,7 @@ class Api:
         return ImageToImageResponse(images=test_images, parameters=vars(img2imgreq), info="test")
 
     def personapi(self, img2imgreq: StableDiffusionImg2ImgProcessingAPI):
-        vp_tree = get_vp_tree(img2imgreq.action, 1)
+        # vp_tree = get_vp_tree(img2imgreq.action, 1)
         init_images = img2imgreq.init_images
         prompt, negative_prompt = people_prompt_gen(img2imgreq.action, img2imgreq.age, img2imgreq.sex, img2imgreq.clothing)
         img2imgreq.negative_prompt = negative_prompt
@@ -503,18 +503,18 @@ class Api:
 
         for image in processed.images:
             b64images.append(encode_pil_to_base64(image))
-            generated_pose_vector = get_image_pose_vector(image)
-            nearest_neighbors = vp_tree.get_n_nearest_neighbors(generated_pose_vector, 8)
-            for n in nearest_neighbors:
-                neighbor = n[1]
-                neighbor_id = neighbor.id
-                neighbor.image = Image.open(f"cutouts/people/ppl_{neighbor_id}.png")
-                output_image = neighbor.align_to_vector(generated_pose_vector)
-                # Convert to base64 string without the header
-                output_b64 = encode_pil_to_base64(output_image)
-
-                # Append to b64images
-                b64images.append(output_b64)
+            # generated_pose_vector = get_image_pose_vector(image)
+            # nearest_neighbors = vp_tree.get_n_nearest_neighbors(generated_pose_vector, 8)
+            # for n in nearest_neighbors:
+            #     neighbor = n[1]
+            #     neighbor_id = neighbor.id
+            #     neighbor.image = Image.open(f"cutouts/people/ppl_{neighbor_id}.png")
+            #     output_image = neighbor.align_to_vector(generated_pose_vector)
+            #     # Convert to base64 string without the header
+            #     output_b64 = encode_pil_to_base64(output_image)
+            #
+            #     # Append to b64images
+            #     b64images.append(output_b64)
 
 
         if not img2imgreq.include_init_images:
